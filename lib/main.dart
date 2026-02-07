@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/auth_service.dart';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -438,7 +439,6 @@ class AppHeroTitle extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: primary, // solid blue
-            
           ),
           child: Icon(
             icon,
@@ -487,13 +487,34 @@ class VaultPage extends StatefulWidget {
 
 class _VaultPageState extends State<VaultPage> {
   final _authService = AuthService();
-  Map<String, String> _vaultItems = {};
+  Map<String, Map<String, String>> _vaultItems = {};
+  String _now() {
+    final t = DateTime.now();
+    return "${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')} "
+        "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
+  }
+
   bool _loading = false;
+
+  // -------- SORT FUNCTION --------
+  Map<String, Map<String, String>> _getSortedMap(
+      Map<String, Map<String, String>> map) {
+    final sortedKeys = map.keys.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    return {for (var k in sortedKeys) k: map[k]!};
+  }
 
   @override
   void initState() {
     super.initState();
     _loadVault();
+  }
+
+  @override
+  void dispose() {
+    _clipboardTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadVault() async {
@@ -506,7 +527,12 @@ class _VaultPageState extends State<VaultPage> {
     );
 
     setState(() {
-      _vaultItems = Map<String, String>.from(decrypted);
+      _vaultItems = Map<String, Map<String, String>>.from(
+        decrypted.map((k, v) => MapEntry(
+              k,
+              Map<String, String>.from(v),
+            )),
+      );
     });
   }
 
@@ -535,9 +561,7 @@ class _VaultPageState extends State<VaultPage> {
               controller: keyCtrl,
               decoration: const InputDecoration(labelText: 'Title'),
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.01,
-            ),
+            const SizedBox(height: 10),
             TextField(
               controller: valCtrl,
               decoration: const InputDecoration(labelText: 'Password'),
@@ -552,8 +576,12 @@ class _VaultPageState extends State<VaultPage> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                _vaultItems[keyCtrl.text] = valCtrl.text;
+                _vaultItems[keyCtrl.text] = {
+                  "password": valCtrl.text,
+                  "updatedAt": _now(),
+                };
               });
+
               Navigator.pop(context);
               _saveVault();
             },
@@ -583,8 +611,12 @@ class _VaultPageState extends State<VaultPage> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                _vaultItems[key] = valCtrl.text;
+                _vaultItems[key] = {
+                  "password": valCtrl.text,
+                  "updatedAt": _now(),
+                };
               });
+
               Navigator.pop(context);
               _saveVault();
             },
@@ -598,19 +630,40 @@ class _VaultPageState extends State<VaultPage> {
   void _deleteItem(String key) {
     setState(() {
       _vaultItems.remove(key);
+      _vaultItems = _getSortedMap(_vaultItems);
     });
     _saveVault();
   }
 
+  Timer? _clipboardTimer;
+
   void _copy(String text) {
+    // Copy password
     Clipboard.setData(ClipboardData(text: text));
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Copied to clipboard')),
     );
+
+    // Cancel previous timer if exists
+    _clipboardTimer?.cancel();
+
+    // Start 20-second timer
+    _clipboardTimer = Timer(const Duration(seconds: 20), () async {
+      await Clipboard.setData(const ClipboardData(text: ''));
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Clipboard cleared automatically')),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final sortedItems = _getSortedMap(_vaultItems);
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: true,
@@ -634,25 +687,26 @@ class _VaultPageState extends State<VaultPage> {
           ),
         ],
       ),
-      body: _vaultItems.isEmpty
+      body: sortedItems.isEmpty
           ? const Center(child: Text('Your vault is empty'))
           : ListView(
               padding: const EdgeInsets.all(16),
-              children: _vaultItems.entries.map((entry) {
+              children: sortedItems.entries.map((entry) {
                 return Card(
                   child: ListTile(
                     title: Text(entry.key),
-                    subtitle: const Text('••••••••'),
+                    subtitle: Text("Updated: ${entry.value['updatedAt']}"),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.copy),
-                          onPressed: () => _copy(entry.value),
+                          onPressed: () => _copy(entry.value["password"]!),
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit),
-                          onPressed: () => _editItem(entry.key, entry.value),
+                          onPressed: () =>
+                              _editItem(entry.key, entry.value["password"]!),
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
