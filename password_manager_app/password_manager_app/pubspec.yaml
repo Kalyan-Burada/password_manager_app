@@ -1,0 +1,31 @@
+name: password_manager_app
+description: A cross-platform password manager client for Flutter.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP requests
+  http: ^1.2.0
+  
+  # Argon2 password hashing
+  argon2: ^1.0.1
+  ffi: ^2.1.0
+  
+  # UI
+  cupertino_icons: ^1.0.6
+  encrypt: ^5.0.3
+  cryptography: ^2.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
