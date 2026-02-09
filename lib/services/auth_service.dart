@@ -176,6 +176,51 @@ class AuthService {
     return response.statusCode == 200;
   }
 
+  // Backup Methods
+
+  Future<List<String>> getBackups(String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/backups'),
+      headers: {'Authorization': token},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch backups');
+    }
+
+    final data = json.decode(response.body);
+    return List<String>.from(data['backups']);
+  }
+
+  Future<String> createBackup(String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/backups'),
+      headers: {'Authorization': token},
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to create backup');
+    }
+
+    return json.decode(response.body)['filename'];
+  }
+
+  Future<void> restoreBackup(String token, String filename) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/backups/restore'),
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'filename': filename}),
+    );
+
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body)['detail'] ?? 'Failed to restore backup';
+      throw Exception(error);
+    }
+  }
+
   Uint8List _randomBytes(int length) {
     final rnd = Random.secure();
     return Uint8List.fromList(

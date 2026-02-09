@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 // UI ENHANCEMENT: Provider for state management of settings
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
+import 'widgets/app_hero_title.dart';
+import 'widgets/backup_dialog.dart';
 import 'docs_page.dart';
 // UI ENHANCEMENT: New settings page for accessibility controls
 import 'pages/settings_page.dart';
@@ -872,6 +874,39 @@ class _VaultPageState extends State<VaultPage> {
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.backup),
+            tooltip: 'Manage Backups',
+            onPressed: () async {
+              final restored = await showDialog<bool>(
+                context: context,
+                builder: (context) => BackupManagerDialog(
+                  token: widget.token,
+                  authService: _authService,
+                ),
+              );
+              
+              // If a backup was restored, reload vault data
+              if (restored == true && mounted) {
+                final freshVault = await _authService.getVault(widget.token);
+                final blob = freshVault['blob'];
+                if (blob != null) {
+                  final decrypted = await _authService.decryptVault(
+                    Map<String, dynamic>.from(blob),
+                    widget.password,
+                  );
+                  setState(() {
+                    _vaultItems = Map<String, Map<String, String>>.from(
+                      decrypted.map((k, v) => MapEntry(
+                            k,
+                            Map<String, String>.from(v),
+                          )),
+                    );
+                  });
+                }
+              }
             },
           ),
           IconButton(
