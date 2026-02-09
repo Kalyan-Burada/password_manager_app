@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// UI ENHANCEMENT: Provider for state management of settings
+import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
 import 'docs_page.dart';
+// UI ENHANCEMENT: New settings page for accessibility controls
+import 'pages/settings_page.dart';
+// UI ENHANCEMENT: Settings provider for theme and accessibility preferences
+import 'providers/settings_provider.dart';
+// UI ENHANCEMENT: Comprehensive theme system with dark/light and high contrast modes
+import 'theme/app_theme.dart';
 import 'dart:async';
 
 void main() {
-  runApp(const MyApp());
+  // UI ENHANCEMENT: Wrap app with ChangeNotifierProvider for settings state management
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => SettingsProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 /* =========================
@@ -17,42 +31,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Password Manager',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0F1115),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F1115),
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF1A1D24),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Colors.blue),
-          ),
-          labelStyle: const TextStyle(color: Colors.grey),
-        ),
-      ),
-      home: const StartPage(),
+    // UI ENHANCEMENT: Consumer listens to settings changes for reactive theme updates
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, _) {
+        return MaterialApp(
+          title: 'Password Manager',
+          debugShowCheckedModeBanner: false,
+          // UI ENHANCEMENT: Dynamic theme mode based on user preference
+          themeMode: settings.themeMode,
+          // UI ENHANCEMENT: Light theme with optional high contrast
+          theme: AppTheme.lightTheme(highContrast: settings.highContrast),
+          // UI ENHANCEMENT: Dark theme with optional high contrast
+          darkTheme: AppTheme.darkTheme(highContrast: settings.highContrast),
+          builder: (context, child) {
+            // UI ENHANCEMENT: Apply user-selected text scale factor (0.8x - 1.5x)
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaleFactor: settings.textScale,
+              ),
+              child: child!,
+            );
+          },
+          home: const StartPage(),
+        );
+      },
     );
   }
 }
@@ -156,11 +158,18 @@ class _LoginPageState extends State<LoginPage> {
       final username = _usernameController.text.trim().toLowerCase();
       final password = _passwordController.text;
 
+      // UI ENHANCEMENT: Validation with user-friendly error messages
+      if (username.isEmpty || password.isEmpty) {
+        throw Exception('Please enter both username and password');
+      }
+
       final salt = await _authService.getAuthSalt(username);
-      if (salt == null) throw Exception('User does not exist');
+      // UI ENHANCEMENT: Clear, helpful error message instead of technical exception
+      if (salt == null) throw Exception('User not found. Please check your username.');
 
       final token = await _authService.login(username, password);
-      if (token == null) throw Exception('Invalid password');
+      // UI ENHANCEMENT: User-friendly password error message
+      if (token == null) throw Exception('Incorrect password. Please try again.');
 
       final vault = await _authService.getVault(token);
 
@@ -191,9 +200,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: true, // enables back arrow
+        automaticallyImplyLeading: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
@@ -208,26 +217,77 @@ class _LoginPageState extends State<LoginPage> {
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.06,
             ),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
+            // UI ENHANCEMENT: Semantic label for screen reader accessibility
+            Semantics(
+              label: 'Username input field',
+              child: TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Username'),
+                // UI ENHANCEMENT: Keyboard navigation - Tab to next field
+                textInputAction: TextInputAction.next,
+                // UI ENHANCEMENT: Disable input during loading
+                enabled: !_loading,
+              ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+            // UI ENHANCEMENT: Semantic label for screen reader accessibility
+            Semantics(
+              label: 'Password input field',
+              child: TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Password'),
+                // UI ENHANCEMENT: Keyboard navigation - Enter to submit
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _loading ? null : _login(),
+                // UI ENHANCEMENT: Disable input during loading
+                enabled: !_loading,
+              ),
             ),
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.03,
             ),
-            ElevatedButton(
-              onPressed: _loading ? null : _login,
-              child: const Text('Login'),
+            // UI ENHANCEMENT: Full-width button with loading indicator
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _login,
+                // UI ENHANCEMENT: Show circular progress indicator during loading
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Login'),
+              ),
             ),
             if (_error.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(_error, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              // UI ENHANCEMENT: Styled error message container with icon
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ],
         ),
@@ -262,8 +322,13 @@ class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
 
     try {
       final username = _usernameController.text.trim().toLowerCase();
+      
+      if (username.isEmpty) {
+        throw Exception('Please enter a username');
+      }
+      
       final salt = await _authService.getAuthSalt(username);
-      if (salt != null) throw Exception('Username already exists');
+      if (salt != null) throw Exception('Username already taken. Please choose another.');
 
       if (!mounted) return;
 
@@ -288,24 +353,68 @@ class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: true, // enables back arrow
+        automaticallyImplyLeading: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Choose a username'),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.06),
+            const AppHeroTitle(
+              title: 'Create Account',
+              subtitle: 'Choose a unique username',
+              icon: Icons.person_add_rounded,
+            ),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.06),
+            Semantics(
+              label: 'Username input field',
+              child: TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Choose a username'),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _loading ? null : _next(),
+                enabled: !_loading,
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loading ? null : _next,
-              child: const Text('Next'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _next,
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Next'),
+              ),
             ),
             if (_error.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(_error, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ],
         ),
@@ -342,10 +451,18 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
 
     try {
       final password = _passwordController.text;
+      
+      if (password.isEmpty) {
+        throw Exception('Please enter a password');
+      }
+      
+      if (password.length < 8) {
+        throw Exception('Password must be at least 8 characters long');
+      }
 
       await _authService.register(widget.username, password);
       final token = await _authService.login(widget.username, password);
-      if (token == null) throw Exception('Login failed');
+      if (token == null) throw Exception('Registration succeeded but login failed. Please try logging in.');
 
       final vault = await _authService.getVault(token);
 
@@ -376,9 +493,9 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: true, // enables back arrow
+        automaticallyImplyLeading: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
@@ -393,21 +510,66 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.06,
             ),
-            Text('Username: ${widget.username}'),
+            Text(
+              'Username: ${widget.username}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+            Semantics(
+              label: 'Password input field',
+              child: TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  helperText: 'At least 8 characters',
+                ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _loading ? null : _register(),
+                enabled: !_loading,
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loading ? null : _register,
-              child: const Text('Register'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _register,
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Register'),
+              ),
             ),
             if (_error.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(_error, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ],
         ),
@@ -528,11 +690,36 @@ class _VaultPageState extends State<VaultPage> {
     );
 
     setState(() {
+      // UI ENHANCEMENT: Backward compatibility - handle both old (String) and new (Map) vault formats
       _vaultItems = Map<String, Map<String, String>>.from(
-        decrypted.map((k, v) => MapEntry(
+        decrypted.map((k, v) {
+          // Handle both old format (String) and new format (Map)
+          if (v is String) {
+            // Old format: just a password string - convert to new format
+            return MapEntry(
+              k,
+              {
+                "password": v,
+                "updatedAt": _now(),
+              },
+            );
+          } else if (v is Map) {
+            // New format: Map with password and updatedAt
+            return MapEntry(
               k,
               Map<String, String>.from(v),
-            )),
+            );
+          } else {
+            // Fallback for unexpected types
+            return MapEntry(
+              k,
+              {
+                "password": v.toString(),
+                "updatedAt": _now(),
+              },
+            );
+          }
+        }),
       );
     });
   }
@@ -676,6 +863,17 @@ class _VaultPageState extends State<VaultPage> {
           ),
         ),
         actions: [
+          // UI ENHANCEMENT: Settings button for accessibility controls
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: 'Security Documentation',
@@ -688,6 +886,7 @@ class _VaultPageState extends State<VaultPage> {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
