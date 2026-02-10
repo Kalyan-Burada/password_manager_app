@@ -16,8 +16,7 @@ class RateLimitException implements Exception {
 }
 
 class AuthService {
-  static const String baseUrl = 'http://127.0.0.1:8000'; // TODO: Switch back to https after testing
-
+  static const String baseUrl = 'https://127.0.0.1:8000';
   Future<Uint8List> _derive(String password, Uint8List salt) async {
     final argon2 = Argon2BytesGenerator();
 
