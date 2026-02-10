@@ -238,7 +238,7 @@ class AuthService {
 
   // Backup Methods
 
-  Future<List<String>> getBackups(String token) async {
+  Future<List<BackupFile>> getBackups(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/backups'),
       headers: {'Authorization': token},
@@ -249,7 +249,9 @@ class AuthService {
     }
 
     final data = json.decode(response.body);
-    return List<String>.from(data['backups']);
+    return (data['backups'] as List)
+        .map((e) => BackupFile.fromJson(e))
+        .toList();
   }
 
   Future<String> createBackup(String token) async {
@@ -264,7 +266,6 @@ class AuthService {
 
     return json.decode(response.body)['filename'];
   }
-
   Future<void> restoreBackup(String token, String filename) async {
     final response = await http.post(
       Uri.parse('$baseUrl/backups/restore'),
@@ -293,5 +294,25 @@ class AuthService {
       result[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
     }
     return result;
+  }
+}
+
+class BackupFile {
+  final String filename;
+  final String timestamp;
+  final int size;
+
+  BackupFile({
+    required this.filename,
+    required this.timestamp,
+    required this.size,
+  });
+
+  factory BackupFile.fromJson(Map<String, dynamic> json) {
+    return BackupFile(
+      filename: json['filename'],
+      timestamp: json['timestamp'],
+      size: json['size'],
+    );
   }
 }
