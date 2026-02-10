@@ -14,7 +14,12 @@ import 'providers/settings_provider.dart';
 import 'theme/app_theme.dart';
 import 'dart:async';
 
+import 'dart:io';
+
 void main() {
+  // DEV ONLY: Trust self-signed certificates for local development
+  HttpOverrides.global = DevHttpOverrides();
+
   // UI ENHANCEMENT: Wrap app with ChangeNotifierProvider for settings state management
   runApp(
     ChangeNotifierProvider(
@@ -22,6 +27,15 @@ void main() {
       child: const MyApp(),
     ),
   );
+}
+
+// Development-only override to accept self-signed certificates
+class DevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
 }
 
 /* =========================
@@ -861,7 +875,7 @@ class _VaultPageState extends State<VaultPage> {
   @override
   void initState() {
     super.initState();
-    _loadVault();
+    _loadVault(widget.vaultResponse);
   }
 
   @override
@@ -870,8 +884,25 @@ class _VaultPageState extends State<VaultPage> {
     super.dispose();
   }
 
-  Future<void> _loadVault() async {
-    final blob = widget.vaultResponse['blob'];
+  Future<void> _loadVault([Map<String, dynamic>? vaultData]) async {
+    Map<String, dynamic> data;
+
+    if (vaultData != null) {
+      data = vaultData;
+    } else {
+      try {
+        data = await _authService.getVault(widget.token);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to refresh vault: $e')),
+          );
+        }
+        return;
+      }
+    }
+
+    final blob = data['blob'];
     if (blob == null) return;
 
     final decrypted = await _authService.decryptVault(
@@ -1142,6 +1173,23 @@ class _VaultPageState extends State<VaultPage> {
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.backup),
+            tooltip: 'Encrypted Backups',
+            onPressed: () async {
+              final restored = await showDialog<bool>(
+                context: context,
+                builder: (_) => BackupManagerDialog(
+                  token: widget.token,
+                  authService: _authService,
+                ),
+              );
+
+              if (restored == true) {
+                _loadVault();
+              }
             },
           ),
           IconButton(

@@ -16,7 +16,7 @@ class BackupManagerDialog extends StatefulWidget {
 }
 
 class _BackupManagerDialogState extends State<BackupManagerDialog> {
-  List<String> _backups = [];
+  List<BackupFile> _backups = [];
   bool _loading = true;
   String? _error;
 
@@ -105,35 +105,26 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
     }
   }
 
-  DateTime? _parseTimestamp(String filename) {
-    // Extract timestamp from filename like "backup_20260209_210036.enc"
-    final regex = RegExp(r'backup_(\d{8})_(\d{6})\.enc');
-    final match = regex.firstMatch(filename);
-    
-    if (match == null) return null;
-    
-    final dateStr = match.group(1)!; // "20260209"
-    final timeStr = match.group(2)!; // "210036"
-    
-    final year = int.parse(dateStr.substring(0, 4));
-    final month = int.parse(dateStr.substring(4, 6));
-    final day = int.parse(dateStr.substring(6, 8));
-    final hour = int.parse(timeStr.substring(0, 2));
-    final minute = int.parse(timeStr.substring(2, 4));
-    final second = int.parse(timeStr.substring(4, 6));
-    
-    return DateTime(year, month, day, hour, minute, second);
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  String _formatTimestamp(DateTime dt) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-    final period = dt.hour >= 12 ? 'PM' : 'AM';
-    final minute = dt.minute.toString().padLeft(2, '0');
-    
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year} at $hour:$minute $period';
+  String _formatDate(String isoString) {
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final period = dt.hour >= 12 ? 'PM' : 'AM';
+      final minute = dt.minute.toString().padLeft(2, '0');
+      
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year} at $hour:$minute $period';
+    } catch (e) {
+      return isoString;
+    }
   }
 
   @override
@@ -175,15 +166,20 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
                           itemCount: _backups.length,
                           itemBuilder: (context, index) {
                             final backup = _backups[index];
-                            final timestamp = _parseTimestamp(backup);
                             return ListTile(
                               leading: const Icon(Icons.backup),
-                              title: Text(backup),
-                              subtitle: Text(timestamp != null 
-                                ? 'Created: ${_formatTimestamp(timestamp)}'
-                                : 'Encrypted Backup'),
+                              title: Text(backup.filename),
+                              subtitle: Row(
+                                children: [
+                                  Text(_formatDate(backup.timestamp)),
+                                  const SizedBox(width: 8),
+                                  const Text('•'),
+                                  const SizedBox(width: 8),
+                                  Text(_formatSize(backup.size)),
+                                ],
+                              ),
                               trailing: ElevatedButton(
-                                onPressed: () => _restoreBackup(backup),
+                                onPressed: () => _restoreBackup(backup.filename),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
                                 ),
