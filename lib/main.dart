@@ -107,7 +107,9 @@ class StartPage extends StatelessWidget {
                   settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
                 ),
                 onPressed: () => settings.toggleTheme(),
-                tooltip: settings.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                tooltip: settings.isDarkMode
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
               );
             },
           ),
@@ -266,13 +268,20 @@ class _LoginPageState extends State<LoginPage> {
       if (salt == null)
         throw Exception('User not found. Please check your username.');
 
+      // SECURITY FIX: Always verify password BEFORE checking MFA status
+      // This prevents incorrect passwords from proceeding to MFA verification
+      final token = await _authService.login(username, password);
+      if (token == null)
+        throw Exception('Incorrect password. Please try again.');
+
       // Check if MFA is enabled
       final mfaEnabled = await _authService.checkMfaStatus(username);
 
       if (!mounted) return;
 
       if (mfaEnabled) {
-        // Redirect to MFA verification page
+        // MFA is enabled - redirect to MFA verification page
+        // Note: The temporary token will be replaced after MFA verification
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -283,11 +292,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       } else {
-        // Normal login without MFA
-        final token = await _authService.login(username, password);
-        if (token == null)
-          throw Exception('Incorrect password. Please try again.');
-
+        // Normal login without MFA - proceed to vault
         final vault = await _authService.getVault(token);
 
         if (!mounted) return;
@@ -334,7 +339,9 @@ class _LoginPageState extends State<LoginPage> {
                   settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
                 ),
                 onPressed: () => settings.toggleTheme(),
-                tooltip: settings.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                tooltip: settings.isDarkMode
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
               );
             },
           ),
@@ -527,7 +534,9 @@ class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
                   settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
                 ),
                 onPressed: () => settings.toggleTheme(),
-                tooltip: settings.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                tooltip: settings.isDarkMode
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
               );
             },
           ),
@@ -745,7 +754,9 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
                   settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
                 ),
                 onPressed: () => settings.toggleTheme(),
-                tooltip: settings.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                tooltip: settings.isDarkMode
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
               );
             },
           ),
@@ -1498,14 +1509,56 @@ class _MfaSettingsPageState extends State<MfaSettingsPage> {
     _checkStatus();
   }
 
+  /// Check if MFA is currently enabled for this user
   Future<void> _checkStatus() async {
-    // This is a workaround - we'd need to pass username or store it
-    // For now, just show the setup option
-    setState(() => _loading = false);
+    try {
+      final enabled = await _authService.checkMfaStatus(widget.username);
+      setState(() {
+        _mfaEnabled = enabled;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _mfaEnabled = false;
+        _loading = false;
+      });
+    }
   }
 
+  /// Setup MFA - with warning if already enabled
   Future<void> _setupMfa() async {
-    Navigator.push(
+    // Show warning if MFA is already enabled
+    if (_mfaEnabled) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('⚠️ Replace MFA Setup?'),
+          content: const Text(
+            'You already have MFA enabled. Setting up again will:\n\n'
+            '• Invalidate your current QR code/secret\n'
+            '• Make your old backup codes useless\n'
+            '• Temporarily disable MFA until you verify the new code\n\n'
+            'Are you sure you want to continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Replace MFA'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+    }
+
+    // Navigate to setup page
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => MfaSetupPage(
@@ -1514,8 +1567,14 @@ class _MfaSettingsPageState extends State<MfaSettingsPage> {
         ),
       ),
     );
+
+    // Refresh status after setup (in case user completed it)
+    if (result == true || mounted) {
+      _checkStatus();
+    }
   }
 
+  /// Disable MFA with confirmation
   Future<void> _disableMfa() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1553,13 +1612,13 @@ class _MfaSettingsPageState extends State<MfaSettingsPage> {
         const SnackBar(content: Text('MFA disabled successfully')),
       );
 
-      Navigator.pop(context);
+      // Refresh status
+      _checkStatus();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
-    } finally {
       setState(() => _loading = false);
     }
   }
@@ -1573,18 +1632,75 @@ class _MfaSettingsPageState extends State<MfaSettingsPage> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // Current Status Card
                 Card(
+                  color: _mfaEnabled
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
                   child: ListTile(
-                    leading: const Icon(Icons.security, color: Colors.blue),
-                    title: const Text('Setup Two-Factor Authentication'),
-                    subtitle: const Text(
-                      'Add an extra layer of security to your account',
+                    leading: Icon(
+                      _mfaEnabled ? Icons.check_circle : Icons.warning_rounded,
+                      color: _mfaEnabled ? Colors.green : Colors.orange,
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _setupMfa,
+                    title: Text(
+                      _mfaEnabled ? 'MFA Enabled' : 'MFA Disabled',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _mfaEnabled ? Colors.green : Colors.orange,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _mfaEnabled
+                          ? 'Your account is protected with two-factor authentication'
+                          : 'Your account is not protected with MFA',
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+
+                // Setup/Re-setup Button
+                if (!_mfaEnabled) ...[
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.security, color: Colors.blue),
+                      title: const Text('Setup Two-Factor Authentication'),
+                      subtitle: const Text(
+                        'Add an extra layer of security to your account',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _setupMfa,
+                    ),
+                  ),
+                ] else ...[
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.refresh, color: Colors.orange),
+                      title: const Text('Re-setup MFA'),
+                      subtitle: const Text(
+                        'Replace your current MFA with a new one',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _setupMfa,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      leading:
+                          const Icon(Icons.remove_circle, color: Colors.red),
+                      title: const Text('Disable MFA'),
+                      subtitle: const Text(
+                        'Turn off two-factor authentication',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _disableMfa,
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+
+                // Info Card
                 Card(
                   child: ListTile(
                     leading: const Icon(Icons.info_outline),

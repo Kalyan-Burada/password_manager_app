@@ -52,27 +52,27 @@ class _DocumentationPageState extends State<DocumentationPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF6C5CE7),
-            const Color(0xFF00B894),
+            Color(0xFF6C5CE7),
+            Color(0xFF00B894),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.security, color: Colors.white, size: 40),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Text(
                   'Zero-Knowledge Architecture',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -81,10 +81,10 @@ class _DocumentationPageState extends State<DocumentationPage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'Your master password never leaves your device. The server cannot decrypt, view, or access your vault data, even if compromised.',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               color: Colors.white,
               height: 1.5,
@@ -106,13 +106,13 @@ class _DocumentationPageState extends State<DocumentationPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.shield_outlined, color: Color(0xFF6C5CE7), size: 28),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text(
                 'Core Guarantee',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -121,9 +121,9 @@ class _DocumentationPageState extends State<DocumentationPage> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildBulletPoint('Server admins cannot access vault data', Icons.check_circle, Color(0xFF00B894)),
-          _buildBulletPoint('Database breaches expose no passwords', Icons.check_circle, Color(0xFF00B894)),
-          _buildBulletPoint('Court orders cannot compel decryption', Icons.check_circle, Color(0xFF00B894)),
+          _buildBulletPoint('Server admins cannot access vault data', Icons.check_circle, const Color(0xFF00B894)),
+          _buildBulletPoint('Database breaches expose no passwords', Icons.check_circle, const Color(0xFF00B894)),
+          _buildBulletPoint('Court orders cannot compel decryption', Icons.check_circle, const Color(0xFF00B894)),
         ],
       ),
     );
@@ -156,9 +156,9 @@ class _DocumentationPageState extends State<DocumentationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Data Flow Architecture',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -173,7 +173,7 @@ class _DocumentationPageState extends State<DocumentationPage> {
             constraints: const BoxConstraints(maxWidth: 500),
             child: _buildFlowCard(
               'YOUR DEVICE (Client)',
-              Color(0xFF6C5CE7),
+              const Color(0xFF6C5CE7),
               [
                 '1. Master Password: "MySecretPassword123"',
                 '2. Derive Auth Key: Argon2(password + auth_salt)',
@@ -194,11 +194,11 @@ class _DocumentationPageState extends State<DocumentationPage> {
             width: 500,
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
+            child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.arrow_downward, color: Color(0xFF00B894), size: 32),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Send encrypted data only',
                   style: TextStyle(
@@ -221,7 +221,7 @@ class _DocumentationPageState extends State<DocumentationPage> {
             constraints: const BoxConstraints(maxWidth: 500),
             child: _buildFlowCard(
               'SERVER (Backend)',
-              Color(0xFF00B894),
+              const Color(0xFF00B894),
               [
                 'Stores (ALL ENCRYPTED):',
                 '  • auth_salt (public)',
@@ -282,9 +282,9 @@ class _DocumentationPageState extends State<DocumentationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Key Features',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -348,9 +348,9 @@ class _DocumentationPageState extends State<DocumentationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Security Properties',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -360,19 +360,19 @@ class _DocumentationPageState extends State<DocumentationPage> {
         _buildPropertyCard(
           'Authentication Without Password Transmission',
           'Your password is never sent to the server. Instead, we derive a verifier using Argon2(password, salt) and send only that.',
-          Color(0xFF6C5CE7),
+          const Color(0xFF6C5CE7),
         ),
         const SizedBox(height: 12),
         _buildPropertyCard(
           'Separation of Concerns: Two Keys',
           'Authentication key (for login) and Vault key (for encryption) are derived separately. Compromising one doesn\'t compromise the other.',
-          Color(0xFF00B894),
+          const Color(0xFF00B894),
         ),
         const SizedBox(height: 12),
         _buildPropertyCard(
           'End-to-End Encryption',
           'Your device encrypts data before sending. The server only sees ciphertext. Decryption happens only on your device.',
-          Color(0xFF9B8EFF),
+          const Color(0xFF9B8EFF),
         ),
       ],
     );
@@ -415,9 +415,9 @@ class _DocumentationPageState extends State<DocumentationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Threat Model',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -428,7 +428,7 @@ class _DocumentationPageState extends State<DocumentationPage> {
         // Protects Against
         _buildThreatCard(
           'Protects Against ✅',
-          Color(0xFF00B894),
+          const Color(0xFF00B894),
           [
             'Server Compromise',
             'Database Breach',
@@ -444,7 +444,7 @@ class _DocumentationPageState extends State<DocumentationPage> {
         // Does NOT Protect Against
         _buildThreatCard(
           'Does NOT Protect Against ❌',
-          Color(0xFFFF6B6B),
+          const Color(0xFFFF6B6B),
           [
             'Weak Master Password',
             'Client-Side Malware',
