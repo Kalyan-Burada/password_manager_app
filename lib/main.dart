@@ -24,7 +24,8 @@ class DevHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }
 
@@ -279,7 +280,6 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Incorrect password. Please try again.');
 
       await _logService.logAction('User logged in: $username');
-
 
       // Check if MFA is enabled
       final mfaEnabled = await _authService.checkMfaStatus(username);
@@ -917,23 +917,30 @@ class VaultPage extends StatefulWidget {
   final String token;
   final String password;
   final Map<String, dynamic> vaultResponse;
+  final AuthService authService;
+  final LogService logService;
+  final Duration clipboardClearDelay;
 
-  const VaultPage({
+  VaultPage({
     super.key,
     required this.username,
     required this.token,
     required this.password,
     required this.vaultResponse,
-  });
+    AuthService? authService,
+    LogService? logService,
+    Duration clipboardDelay = const Duration(seconds: 20),
+  })  : authService = authService ?? AuthService(),
+        logService = logService ?? LogService(),
+        clipboardClearDelay = clipboardDelay;
 
   @override
   State<VaultPage> createState() => _VaultPageState();
 }
 
-
 class _VaultPageState extends State<VaultPage> {
-  final _authService = AuthService();
-  final _logService = LogService();
+  late final AuthService _authService;
+  late final LogService _logService;
   Map<String, Map<String, String>> _vaultItems = {};
   String _now() {
     final t = DateTime.now();
@@ -955,6 +962,8 @@ class _VaultPageState extends State<VaultPage> {
   @override
   void initState() {
     super.initState();
+    _authService = widget.authService;
+    _logService = widget.logService;
     _loadVault(widget.vaultResponse);
   }
 
@@ -1170,7 +1179,6 @@ class _VaultPageState extends State<VaultPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Edit $key'),
-
         content: Row(
           children: [
             Expanded(
@@ -1311,7 +1319,7 @@ class _VaultPageState extends State<VaultPage> {
     _clipboardTimer?.cancel();
 
     // Start 20-second timer
-    _clipboardTimer = Timer(const Duration(seconds: 20), () async {
+    _clipboardTimer = Timer(widget.clipboardClearDelay, () async {
       await Clipboard.setData(const ClipboardData(text: ''));
 
       if (!mounted) return;
@@ -1726,7 +1734,6 @@ class _MfaSettingsPageState extends State<MfaSettingsPage> {
 
       await _logService.logAction('MFA disabled');
 
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1917,7 +1924,6 @@ class _MfaSetupPageState extends State<MfaSetupPage> {
       }
 
       await _logService.logAction('MFA enabled');
-
 
       if (!mounted) return;
 
