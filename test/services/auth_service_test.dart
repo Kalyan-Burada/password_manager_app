@@ -4,7 +4,6 @@ import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
 import 'package:password_manager_app/services/auth_service.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 
 // Generate Mocks
 @GenerateMocks([http.Client])

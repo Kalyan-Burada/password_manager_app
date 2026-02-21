@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:password_manager_app/main.dart';
 import 'package:password_manager_app/services/auth_service.dart';
 import 'package:password_manager_app/services/log_service.dart';
+import 'package:password_manager_app/providers/settings_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeAuthService extends AuthService {
@@ -76,15 +78,18 @@ Future<void> pumpVaultPage(
   authService.seedVault(initialVault);
 
   await tester.pumpWidget(
-    MaterialApp(
-      home: VaultPage(
-        username: 'user',
-        token: 'token',
-        password: 'Password1!',
-        vaultResponse: const {'blob': <String, dynamic>{}},
-        authService: authService,
-        logService: logService,
-        clipboardDelay: clipboardDelay,
+    ChangeNotifierProvider(
+      create: (_) => SettingsProvider(),
+      child: MaterialApp(
+        home: VaultPage(
+          username: 'user',
+          token: 'token',
+          password: 'Password1!',
+          vaultResponse: const {'blob': <String, dynamic>{}},
+          authService: authService,
+          logService: logService,
+          clipboardDelay: clipboardDelay,
+        ),
       ),
     ),
   );

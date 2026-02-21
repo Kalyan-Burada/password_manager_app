@@ -90,6 +90,7 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
           _loading = false;
           _passwordController.clear();
         });
+        return;
       } else {
         // No MFA required - proceed with unlock
         debugPrint('[LockedVaultPage] MFA not enabled, unlocking vault');
@@ -100,6 +101,11 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
 
         // Notify parent to update vault with the entered password
         widget.onUnlock(enteredPassword);
+        if (mounted) {
+          setState(() {
+            _loading = false;
+          });
+        }
       }
     } catch (e) {
       setState(() {
