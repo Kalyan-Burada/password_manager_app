@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../services/log_service.dart';
 
 class BackupManagerDialog extends StatefulWidget {
   final String token;
@@ -50,7 +49,6 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
     try {
       setState(() => _loading = true);
       await widget.authService.createBackup(widget.token);
-      await LogService().logAction('Backup created');
       await _loadBackups(); // Reload list
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -93,7 +91,6 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
     try {
       setState(() => _loading = true);
       await widget.authService.restoreBackup(widget.token, filename);
-      await LogService().logAction('Backup restored: $filename');
       if (mounted) {
         Navigator.pop(context, true); // Return true to indicate restore happened
         ScaffoldMessenger.of(context).showSnackBar(

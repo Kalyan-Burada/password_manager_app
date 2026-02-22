@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 // UI ENHANCEMENT: Provider for state management of settings
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
-import 'services/log_service.dart';
 import 'widgets/app_hero_title.dart';
 import 'widgets/backup_dialog.dart';
 import 'docs_page.dart';
@@ -221,7 +220,6 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _authService = AuthService();
-  final _logService = LogService();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -279,7 +277,6 @@ class _LoginPageState extends State<LoginPage> {
       if (token == null)
         throw Exception('Incorrect password. Please try again.');
 
-      await _logService.logAction('User logged in: $username');
 
       // Check if MFA is enabled
       final mfaEnabled = await _authService.checkMfaStatus(username);
@@ -485,7 +482,6 @@ class RegisterUsernamePage extends StatefulWidget {
 
 class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
   final _authService = AuthService();
-  final _logService = LogService();
   final _usernameController = TextEditingController();
 
   bool _loading = false;
@@ -665,7 +661,6 @@ class RegisterPasswordPage extends StatefulWidget {
 
 class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
   final _authService = AuthService();
-  final _logService = LogService();
   final _passwordController = TextEditingController();
 
   bool _loading = false;
@@ -713,7 +708,6 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
       }
 
       await _authService.register(widget.username, password);
-      await _logService.logAction('User registered: ${widget.username}');
 
       final token = await _authService.login(widget.username, password);
       if (token == null)
@@ -918,7 +912,6 @@ class VaultPage extends StatefulWidget {
   final String password;
   final Map<String, dynamic> vaultResponse;
   final AuthService authService;
-  final LogService logService;
   final Duration clipboardClearDelay;
 
   VaultPage({
@@ -928,10 +921,8 @@ class VaultPage extends StatefulWidget {
     required this.password,
     required this.vaultResponse,
     AuthService? authService,
-    LogService? logService,
     Duration clipboardDelay = const Duration(seconds: 20),
   })  : authService = authService ?? AuthService(),
-        logService = logService ?? LogService(),
         clipboardClearDelay = clipboardDelay;
 
   @override
@@ -940,7 +931,6 @@ class VaultPage extends StatefulWidget {
 
 class _VaultPageState extends State<VaultPage> {
   late final AuthService _authService;
-  late final LogService _logService;
   Map<String, Map<String, String>> _vaultItems = {};
   late TextEditingController _searchController;
   String _searchQuery = '';
@@ -1016,7 +1006,6 @@ class _VaultPageState extends State<VaultPage> {
       });
     });
     _authService = widget.authService;
-    _logService = widget.logService;
     _loadVault(widget.vaultResponse);
   }
 
@@ -1257,7 +1246,6 @@ class _VaultPageState extends State<VaultPage> {
 
                 Navigator.pop(context);
                 _saveVault();
-                _logService.logAction('Item added: $title');
               },
               child: const Text('Add'),
             ),
@@ -1381,7 +1369,6 @@ class _VaultPageState extends State<VaultPage> {
 
                 Navigator.pop(context);
                 _saveVault();
-                _logService.logAction('Item edited: $key');
               },
               child: const Text('Save'),
             ),
@@ -1415,7 +1402,6 @@ class _VaultPageState extends State<VaultPage> {
 
               Navigator.pop(context); // close dialog
               _saveVault();
-              _logService.logAction('Item deleted: $key');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Item deleted')),
@@ -1476,7 +1462,8 @@ class _VaultPageState extends State<VaultPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const LogPage()),
+                // Pass token so LogPage can fetch this user's logs from server
+                MaterialPageRoute(builder: (_) => LogPage(token: widget.token)),
               );
             },
           ),
@@ -1536,7 +1523,7 @@ class _VaultPageState extends State<VaultPage> {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
-            onPressed: () {
+            onPressed: () async {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const StartPage()),
@@ -1855,7 +1842,6 @@ class MfaSettingsPage extends StatefulWidget {
 
 class _MfaSettingsPageState extends State<MfaSettingsPage> {
   final _authService = AuthService();
-  final _logService = LogService();
   bool _loading = true;
   bool _mfaEnabled = false;
 
@@ -1962,7 +1948,6 @@ class _MfaSettingsPageState extends State<MfaSettingsPage> {
       final success = await _authService.disableMfa(widget.token);
       if (!success) throw Exception('Failed to disable MFA');
 
-      await _logService.logAction('MFA disabled');
 
       if (!mounted) return;
 
@@ -2095,7 +2080,6 @@ class MfaSetupPage extends StatefulWidget {
 
 class _MfaSetupPageState extends State<MfaSetupPage> {
   final _authService = AuthService();
-  final _logService = LogService();
   final _codeController = TextEditingController();
 
   bool _loading = true;
@@ -2153,7 +2137,6 @@ class _MfaSetupPageState extends State<MfaSetupPage> {
         throw Exception('Invalid code. Please try again.');
       }
 
-      await _logService.logAction('MFA enabled');
 
       if (!mounted) return;
 

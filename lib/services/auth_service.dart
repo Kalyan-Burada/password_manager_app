@@ -16,7 +16,7 @@ class RateLimitException implements Exception {
 }
 
 class AuthService {
-  static const String baseUrl = 'https://diaphragmatically-scimitared-oda.ngrok-free.dev';
+  static const String baseUrl = 'https://127.0.0.1:8000';
   final http.Client client;
 
   AuthService({http.Client? client}) : client = client ?? http.Client();
@@ -323,6 +323,23 @@ class AuthService {
     if (response.statusCode != 200) {
       throw Exception('Failed to delete backup');
     }
+  }
+
+  /// Fetch audit logs for the authenticated user from the server.
+  /// Returns a list of log entries; each entry has action, details, and timestamp.
+  /// Logs are filtered server-side so only the current user's logs are returned.
+  Future<List<Map<String, dynamic>>> getLogs(String token) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/logs'),
+      headers: {'Authorization': token},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch logs');
+    }
+
+    final data = json.decode(response.body);
+    return List<Map<String, dynamic>>.from(data['logs']);
   }
 
   Uint8List _randomBytes(int length) {
