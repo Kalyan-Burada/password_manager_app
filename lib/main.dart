@@ -1055,7 +1055,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
       _isVaultLocked = true;
     });
 
-    _logService.logAction('Vault auto-locked due to inactivity');
+    _logService.logAction(widget.username, 'Vault auto-locked due to inactivity');
   }
 
   /// Unlock the vault with verified password
@@ -1318,7 +1318,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
 
                 Navigator.pop(context);
                 await _saveVault();
-                await _logService.logAction('Item added: $title');
+                await _logService.logAction(widget.username, 'Item added: $title');
               },
               child: const Text('Add'),
             ),
@@ -1442,7 +1442,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
 
                 Navigator.pop(context);
                 await _saveVault();
-                await _logService.logAction('Item edited: $key');
+                await _logService.logAction(widget.username, 'Item edited: $key');
               },
               child: const Text('Save'),
             ),
@@ -1476,7 +1476,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
 
               Navigator.pop(context); // close dialog
               await _saveVault();
-              await _logService.logAction('Item deleted: $key');
+              await _logService.logAction(widget.username, 'Item deleted: $key');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Item deleted')),
@@ -1615,6 +1615,10 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
               icon: const Icon(Icons.logout),
               tooltip: 'Logout',
               onPressed: () {
+                // Background cleanup
+                widget.authService.logout(widget.token);
+                _logService.clearLogs(widget.username);
+
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => const StartPage()),
@@ -1707,7 +1711,12 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
                             ),
                           )
                         : ListView(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                              top: 16,
+                              bottom: 88, // extra space so FAB doesn't cover last item
+                            ),
                             children: filteredItems.entries.map((entry) {
                               final category =
                                   entry.value['category'] ?? 'Other';

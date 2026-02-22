@@ -74,7 +74,7 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
       }
 
       await _logService
-          .logAction('Vault unlocked after being locked due to inactivity');
+          .logAction(widget.username, 'Vault unlocked after being locked due to inactivity');
 
         if (!mounted) return;
 
@@ -118,7 +118,7 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
       debugPrint(
           '[LockedVaultPage] MFA verification successful, unlocking vault');
       await _logService.logAction(
-          'Vault unlocked after being locked due to inactivity (MFA verified)');
+          widget.username, 'Vault unlocked after being locked due to inactivity (MFA verified)');
 
       if (!mounted) return;
 

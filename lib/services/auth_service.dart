@@ -165,6 +165,18 @@ class AuthService {
     return json.decode(response.body)['token'];
   }
 
+  Future<void> logout(String token) async {
+    try {
+      await client.post(
+        Uri.parse('$baseUrl/logout'),
+        headers: {'Authorization': token},
+      );
+    } catch (e) {
+      // Ignore errors during logout, we still want to clear local state
+      print('Logout API error: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> getVault(String token) async {
     final response = await client.get(
       Uri.parse('$baseUrl/vault'),
