@@ -43,6 +43,19 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
   String _enteredPassword = '';
   String _error = '';
 
+  @override
+  void initState() {
+    super.initState();
+    _logService.setUsername(widget.username);
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _mfaCodeController.dispose();
+    super.dispose();
+  }
+
   /// Verify password and check if MFA is required
   Future<void> _unlock() async {
     setState(() {
@@ -74,9 +87,9 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
       }
 
       await _logService
-          .logAction(widget.username, 'Vault unlocked after being locked due to inactivity');
+          .logAction('Vault unlocked after being locked due to inactivity');
 
-        if (!mounted) return;
+      if (!mounted) return;
 
       // Notify parent to update vault with the entered password
       widget.onUnlock(enteredPassword);
@@ -118,7 +131,7 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
       debugPrint(
           '[LockedVaultPage] MFA verification successful, unlocking vault');
       await _logService.logAction(
-          widget.username, 'Vault unlocked after being locked due to inactivity (MFA verified)');
+          'Vault unlocked after being locked due to inactivity (MFA verified)');
 
       if (!mounted) return;
 
@@ -144,13 +157,6 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
       _error = '';
     });
     _passwordController.clear();
-  }
-
-  @override
-  void dispose() {
-    _passwordController.dispose();
-    _mfaCodeController.dispose();
-    super.dispose();
   }
 
   @override

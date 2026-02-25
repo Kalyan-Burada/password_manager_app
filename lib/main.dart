@@ -6,6 +6,7 @@ import 'services/auth_service.dart';
 import 'services/log_service.dart';
 import 'services/inactivity_service.dart';
 import 'widgets/backup_dialog.dart';
+import 'widgets/import_dialog.dart';
 import 'docs_page.dart';
 // UI ENHANCEMENT: New settings page for accessibility controls
 import 'pages/settings_page.dart';
@@ -1019,6 +1020,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
     });
     _authService = widget.authService;
     _logService = widget.logService;
+    _logService.setUsername(widget.username);
     _unlockedPassword = widget.password;
 
     // SECURITY ENHANCEMENT: Initialize inactivity service
@@ -1055,7 +1057,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
       _isVaultLocked = true;
     });
 
-    _logService.logAction(widget.username, 'Vault auto-locked due to inactivity');
+    _logService.logAction('Vault auto-locked due to inactivity');
   }
 
   /// Unlock the vault with verified password
@@ -1318,7 +1320,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
 
                 Navigator.pop(context);
                 await _saveVault();
-                await _logService.logAction(widget.username, 'Item added: $title');
+                await _logService.logAction('Item added: $title');
               },
               child: const Text('Add'),
             ),
@@ -1442,7 +1444,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
 
                 Navigator.pop(context);
                 await _saveVault();
-                await _logService.logAction(widget.username, 'Item edited: $key');
+                await _logService.logAction('Item edited: $key');
               },
               child: const Text('Save'),
             ),
@@ -1476,7 +1478,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
 
               Navigator.pop(context); // close dialog
               await _saveVault();
-              await _logService.logAction(widget.username, 'Item deleted: $key');
+              await _logService.logAction('Item deleted: $key');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Item deleted')),
@@ -1487,6 +1489,119 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
         ],
       ),
     );
+  }
+
+  /// SECURITY ENHANCEMENT: Handle imported credentials
+  /// Merges imported credentials with existing vault items
+  Future<void> _handleImport(
+      Map<String, Map<String, String>> importedData) async {
+    if (importedData.isEmpty) return;
+
+    final conflictingKeys =
+        _vaultItems.keys.toSet().intersection(importedData.keys.toSet());
+
+    if (conflictingKeys.isNotEmpty) {
+      // Show conflict resolution dialog
+      final mergeChoice = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Credential Conflicts'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Found ${conflictingKeys.length} credential(s) with the same name(s):',
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    conflictingKeys.join(', '),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('How do you want to proceed?'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'skip'),
+              child: const Text('Skip Duplicates'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'keepOld'),
+              child: const Text('Keep Existing'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, 'overwrite'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Overwrite'),
+            ),
+          ],
+        ),
+      );
+
+      if (mergeChoice == 'skip') {
+        // Only add non-conflicting items
+        for (final entry in importedData.entries) {
+          if (!_vaultItems.containsKey(entry.key)) {
+            _vaultItems[entry.key] = entry.value;
+          }
+        }
+      } else if (mergeChoice == 'keepOld') {
+        // Keep existing, only add new items
+        for (final entry in importedData.entries) {
+          if (!_vaultItems.containsKey(entry.key)) {
+            _vaultItems[entry.key] = entry.value;
+          }
+        }
+      } else if (mergeChoice == 'overwrite') {
+        // Overwrite all
+        _vaultItems.addAll(importedData);
+      } else {
+        // Cancelled
+        return;
+      }
+    } else {
+      // No conflicts, add all
+      _vaultItems.addAll(importedData);
+    }
+
+    // Save the updated vault
+    try {
+      setState(() {});
+      await _saveVault();
+      await _logService.logAction(
+        'Imported ${importedData.length} credential(s)',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Successfully imported ${importedData.length} credential(s)'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to import credentials: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Timer? _clipboardTimer;
@@ -1512,6 +1627,89 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
         const SnackBar(content: Text('Clipboard cleared automatically')),
       );
     });
+  }
+
+  /// SECURITY ENHANCEMENT: Copy credential with authorization
+  /// Requires password verification before copying to prevent unauthorized access
+  Future<void> _copyWithAuthorization(
+      String credentialValue, String credentialName) async {
+    final passwordController = TextEditingController();
+
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text('Authorize Access'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Enter your password to copy this credential.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  prefixIcon: const Icon(Icons.lock),
+                ),
+                autofocus: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Authorize'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) {
+        return;
+      }
+
+      final enteredPassword = passwordController.text;
+
+      // Verify password matches
+      if (enteredPassword != _unlockedPassword) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Incorrect password'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Password verified - copy the credential
+      _copy(credentialValue);
+
+      // Log the copy action for audit trail
+      await _logService.logAction(
+        'Credential copied: $credentialName',
+      );
+    } finally {
+      // Dispose controller after the current frame completes to avoid
+      // issues with widget rebuilds in tests (tester.pump/pumpAndSettle)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        passwordController.dispose();
+      });
+    }
   }
 
   @override
@@ -1586,6 +1784,19 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
                 }
               },
             ),
+            // SECURITY ENHANCEMENT: Import credentials from other password managers
+            IconButton(
+              icon: const Icon(Icons.file_download),
+              tooltip: 'Import Credentials',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => ImportCredentialsDialog(
+                    onImport: _handleImport,
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.security),
               tooltip: 'Security & MFA Settings',
@@ -1617,7 +1828,7 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
               onPressed: () {
                 // Background cleanup
                 widget.authService.logout(widget.token);
-                _logService.clearLogs(widget.username);
+                _logService.clearLogs();
 
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -1715,7 +1926,8 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
                               left: 16,
                               right: 16,
                               top: 16,
-                              bottom: 88, // extra space so FAB doesn't cover last item
+                              bottom:
+                                  88, // extra space so FAB doesn't cover last item
                             ),
                             children: filteredItems.entries.map((entry) {
                               final category =
@@ -1749,8 +1961,10 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
                                     children: [
                                       IconButton(
                                         icon: const Icon(Icons.copy),
-                                        onPressed: () =>
-                                            _copy(entry.value["password"]!),
+                                        onPressed: () => _copyWithAuthorization(
+                                          entry.value["password"]!,
+                                          entry.key,
+                                        ),
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.edit),

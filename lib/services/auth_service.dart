@@ -16,7 +16,7 @@ class RateLimitException implements Exception {
 }
 
 class AuthService {
-  static const String baseUrl = 'https://127.0.0.1:8000';
+  static const String baseUrl = 'http://127.0.0.1:8000';
   final http.Client client;
 
   AuthService({http.Client? client}) : client = client ?? http.Client();

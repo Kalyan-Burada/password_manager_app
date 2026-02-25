@@ -19,22 +19,29 @@ class LogAction {
 }
 
 class LogService {
-  String _getStorageKey(String username) => 'user_action_logs_${username.toLowerCase()}';
+  String? _currentUsername;
+
+  void setUsername(String username) {
+    _currentUsername = username;
+  }
+
+  String _getStorageKey(String username) =>
+      'user_action_logs_${username.toLowerCase()}';
 
   Future<List<LogAction>> getLogs(String username) async {
     final prefs = await SharedPreferences.getInstance();
     final logsJson = prefs.getStringList(_getStorageKey(username)) ?? [];
-    
-    return logsJson
-        .map((e) => LogAction.fromJson(jsonDecode(e)))
-        .toList()
+
+    return logsJson.map((e) => LogAction.fromJson(jsonDecode(e))).toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Newest first
   }
 
-  Future<void> logAction(String username, String action) async {
+  Future<void> logAction(String action) async {
+    if (_currentUsername == null) return;
+
     final prefs = await SharedPreferences.getInstance();
-    final logs = await getLogs(username);
-    
+    final logs = await getLogs(_currentUsername!);
+
     final newLog = LogAction(
       action: action,
       timestamp: DateTime.now(),
@@ -44,16 +51,18 @@ class LogService {
     if (logs.length >= 100) {
       logs.removeLast();
     }
-    
+
     // Insert new log at the beginning
     logs.insert(0, newLog);
 
     final logsJson = logs.map((e) => jsonEncode(e.toJson())).toList();
-    await prefs.setStringList(_getStorageKey(username), logsJson);
+    await prefs.setStringList(_getStorageKey(_currentUsername!), logsJson);
   }
 
-  Future<void> clearLogs(String username) async {
+  Future<void> clearLogs() async {
+    if (_currentUsername == null) return;
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_getStorageKey(username));
+    await prefs.remove(_getStorageKey(_currentUsername!));
   }
 }
