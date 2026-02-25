@@ -18,6 +18,9 @@ dependencies:
   argon2: ^1.0.1
   ffi: ^2.1.0
   
+  # File picker for native file dialogs
+  file_picker: ^6.1.0
+  
   # UI
   cupertino_icons: ^1.0.6
   encrypt: ^5.0.3
