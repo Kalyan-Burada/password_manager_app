@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import '../services/auth_service.dart';
 
 class BackupManagerDialog extends StatefulWidget {
@@ -71,7 +73,7 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
         content: const Text(
           'WARNING: Restoring a backup will overwrite ALL current data.\n\n'
           'Are you sure you want to proceed?',
-        ), 
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -92,7 +94,8 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
       setState(() => _loading = true);
       await widget.authService.restoreBackup(widget.token, filename);
       if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate restore happened
+        Navigator.pop(
+            context, true); // Return true to indicate restore happened
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Backup restored successfully')),
         );
@@ -110,7 +113,8 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Backup'),
-        content: Text('Are you sure you want to delete "$filename"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "$filename"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -148,6 +152,44 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
     }
   }
 
+  Future<void> _exportBackup(String filename) async {
+    try {
+      setState(() => _loading = true);
+
+      final bytes =
+          await widget.authService.downloadBackup(widget.token, filename);
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Encrypted Backup',
+        fileName: filename,
+        lockParentWindow: true,
+      );
+
+      if (savePath == null) {
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+        return;
+      }
+
+      final file = File(savePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Encrypted backup exported to $savePath')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -157,13 +199,25 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
   String _formatDate(String isoString) {
     try {
       final dt = DateTime.parse(isoString).toLocal();
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+
       final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
       final period = dt.hour >= 12 ? 'PM' : 'AM';
       final minute = dt.minute.toString().padLeft(2, '0');
-      
+
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year} at $hour:$minute $period';
     } catch (e) {
       return isoString;
@@ -229,13 +283,23 @@ class _BackupManagerDialogState extends State<BackupManagerDialog> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => _deleteBackup(backup.filename),
+                                    icon: const Icon(Icons.download,
+                                        color: Colors.blue),
+                                    onPressed: () =>
+                                        _exportBackup(backup.filename),
+                                    tooltip: 'Export Encrypted Backup',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
+                                    onPressed: () =>
+                                        _deleteBackup(backup.filename),
                                     tooltip: 'Delete Backup',
                                   ),
                                   const SizedBox(width: 8),
                                   ElevatedButton(
-                                    onPressed: () => _restoreBackup(backup.filename),
+                                    onPressed: () =>
+                                        _restoreBackup(backup.filename),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.orange,
                                     ),
