@@ -1161,6 +1161,22 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
     _inactivityService.resetInactivityTimer();
   }
 
+  Future<void> _saveVaultSnapshot(
+      Map<String, Map<String, String>> vaultSnapshot) async {
+    final encrypted =
+        await _authService.encryptVault(vaultSnapshot, _unlockedPassword);
+    await _authService.updateVault(widget.token, encrypted);
+
+    _inactivityService.resetInactivityTimer();
+  }
+
+  void _wipeTransientImportData(Map<String, Map<String, String>> importedData) {
+    for (final credential in importedData.values) {
+      credential.clear();
+    }
+    importedData.clear();
+  }
+
   bool _isStrongPassword(String pass) {
     if (pass.length < 8) return false;
 
@@ -1497,8 +1513,12 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
       Map<String, Map<String, String>> importedData) async {
     if (importedData.isEmpty) return;
 
+    final mergedVault = _vaultItems.map(
+      (key, value) => MapEntry(key, Map<String, String>.from(value)),
+    );
+
     final conflictingKeys =
-        _vaultItems.keys.toSet().intersection(importedData.keys.toSet());
+        mergedVault.keys.toSet().intersection(importedData.keys.toSet());
 
     if (conflictingKeys.isNotEmpty) {
       // Show conflict resolution dialog
@@ -1551,33 +1571,42 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
       if (mergeChoice == 'skip') {
         // Only add non-conflicting items
         for (final entry in importedData.entries) {
-          if (!_vaultItems.containsKey(entry.key)) {
-            _vaultItems[entry.key] = entry.value;
+          if (!mergedVault.containsKey(entry.key)) {
+            mergedVault[entry.key] = Map<String, String>.from(entry.value);
           }
         }
       } else if (mergeChoice == 'keepOld') {
         // Keep existing, only add new items
         for (final entry in importedData.entries) {
-          if (!_vaultItems.containsKey(entry.key)) {
-            _vaultItems[entry.key] = entry.value;
+          if (!mergedVault.containsKey(entry.key)) {
+            mergedVault[entry.key] = Map<String, String>.from(entry.value);
           }
         }
       } else if (mergeChoice == 'overwrite') {
         // Overwrite all
-        _vaultItems.addAll(importedData);
+        for (final entry in importedData.entries) {
+          mergedVault[entry.key] = Map<String, String>.from(entry.value);
+        }
       } else {
         // Cancelled
         return;
       }
     } else {
       // No conflicts, add all
-      _vaultItems.addAll(importedData);
+      for (final entry in importedData.entries) {
+        mergedVault[entry.key] = Map<String, String>.from(entry.value);
+      }
     }
 
     // Save the updated vault
     try {
-      setState(() {});
-      await _saveVault();
+      await _saveVaultSnapshot(mergedVault);
+      if (!mounted) return;
+
+      setState(() {
+        _vaultItems = mergedVault;
+      });
+
       await _logService.logAction(
         'Imported ${importedData.length} credential(s)',
       );
@@ -1601,6 +1630,8 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
           ),
         );
       }
+    } finally {
+      _wipeTransientImportData(importedData);
     }
   }
 
