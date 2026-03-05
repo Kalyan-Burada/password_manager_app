@@ -26,7 +26,7 @@
 | Brute-force Detection | ✅ Active | Per-IP attempt tracking in `SecurityManager` |
 | Multi-Factor Authentication | ✅ Available | TOTP via Google Authenticator (optional) |
 | Encrypted Backups | ✅ Active | All backup files use `.enc` extension (Fernet-encrypted) |
-| Audit Logging | ✅ Active | All vault, backup, and MFA events logged |
+| Audit Logging | ✅ Active | All events logged and encrypted with Fernet (AES-128) |
 
 ---
 
@@ -61,7 +61,6 @@
 
 | Limitation | Impact | Mitigation Plan |
 |------------|--------|-----------------|
-| Audit logs stored in plaintext | Low (no sensitive data in logs) | Planned: encrypt logs (US 5.12) |
 | Self-signed TLS certificate | Dev only | Use CA-signed cert in production |
 | Sessions stored in memory | Lost on restart | Acceptable for academic scope |
 

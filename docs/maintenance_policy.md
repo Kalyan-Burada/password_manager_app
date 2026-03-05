@@ -13,7 +13,7 @@ This document describes how maintenance activities are performed without exposin
 | User vault blob | `server/data/<username>.json` | ✅ Yes (XChaCha20-Poly1305, client-side) |
 | Backup files | `backups/backup_<user>_<timestamp>.enc` | ✅ Yes (Fernet/AES-128) |
 | Auth credentials | `server/auth_db.json` | ✅ Yes (Argon2id verifier, never plaintext) |
-| Audit logs | `server/data/audit_log.json` | ⚠️ Plaintext (contains only usernames + actions, no passwords) |
+| Audit logs | `server/data/audit_log.json` | ✅ Yes (Fernet/AES-128, server-side) |
 | Encryption key | `server/secret.key` | ⚠️ File system (restrict access) |
 
 ## Maintenance Procedures
@@ -32,8 +32,8 @@ This document describes how maintenance activities are performed without exposin
 
 ### Log Maintenance
 - Audit logs are periodically archived
-- Logs contain no passwords or vault content — safe to inspect without encryption concern
-- Future improvement: encrypt logs at rest (User Story 5.12)
+- Logs are encrypted at rest using the server's shared secret key
+- Logs contain no passwords or vault content
 
 ### Server Updates
 - Stop server gracefully (no in-flight requests dropped mid-write)
