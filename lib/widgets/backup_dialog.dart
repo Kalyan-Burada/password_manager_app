@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'dart:io' hide FileType;
 import 'package:file_picker/file_picker.dart';
 import '../services/auth_service.dart';
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'dart:io' hide FileType;
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import '../services/import_service.dart';
 
@@ -38,17 +39,28 @@ class _ImportCredentialsDialogState extends State<ImportCredentialsDialog> {
   Future<void> _selectFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv', 'json'],
+        type: FileType.any, // Avoid extension filter bugs on some platforms
         dialogTitle: 'Select Password File',
         lockParentWindow: true,
+        withData: true, // Required to get file contents on Web
       );
 
       if (result != null && result.files.isNotEmpty) {
         final pickedFile = result.files.first;
         final filePath = pickedFile.path;
+        final fileName = pickedFile.name;
+        
+        // Manual extension validation
+        final extension = fileName.split('.').last.toLowerCase();
+        if (extension != 'csv' && extension != 'json') {
+          setState(() => _error = 'Invalid file type. Only CSV and JSON are supported.');
+          return;
+        }
+
+        String content;
 
         if (filePath != null) {
+          // Native platforms (Desktop/Mobile) provide direct file paths
           final file = File(filePath);
           if (!await file.exists()) {
             if (mounted) {
@@ -61,18 +73,24 @@ class _ImportCredentialsDialogState extends State<ImportCredentialsDialog> {
             }
             return;
           }
-
-          final content = await file.readAsString();
-          final format = ImportService.detectFormat(filePath, content);
-
-          setState(() {
-            _selectedFile = filePath;
-            _importFormat = format;
-          });
-
-          // Auto-parse after file selection
-          await _parseFile(content, format);
+          content = await file.readAsString();
+        } else if (pickedFile.bytes != null) {
+          // Web platform provides bytes instead of a file path
+          content = utf8.decode(pickedFile.bytes!);
+        } else {
+          setState(() => _error = 'Could not read file content');
+          return;
         }
+
+        final format = ImportService.detectFormat(fileName, content);
+
+        setState(() {
+          _selectedFile = fileName; // Display name since Web doesn't have an absolute path
+          _importFormat = format;
+        });
+
+        // Auto-parse after file selection
+        await _parseFile(content, format);
       }
     } catch (e) {
       setState(() => _error = 'Error selecting file: $e');
