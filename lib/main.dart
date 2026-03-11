@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // UI ENHANCEMENT: Provider for state management of settings
 import 'package:provider/provider.dart';
@@ -121,15 +121,13 @@ class _StartPageState extends State<StartPage>
 
     _topAlignment = TweenSequence<Alignment>([
       TweenSequenceItem(
-          tween:
-              AlignmentTween(begin: Alignment.topLeft, end: Alignment.topRight),
+          tween: AlignmentTween(begin: Alignment.topLeft, end: Alignment.topRight),
           weight: 1),
     ]).animate(CurvedAnimation(parent: _bgController, curve: Curves.easeInOut));
 
     _bottomAlignment = TweenSequence<Alignment>([
       TweenSequenceItem(
-          tween: AlignmentTween(
-              begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+          tween: AlignmentTween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
           weight: 1),
     ]).animate(CurvedAnimation(parent: _bgController, curve: Curves.easeInOut));
   }
@@ -144,165 +142,512 @@ class _StartPageState extends State<StartPage>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
+    final screenH = MediaQuery.of(context).size.height;
+    final screenW = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      body: AnimatedBuilder(
-        animation: _bgController,
-        builder: (context, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: _topAlignment.value,
-                end: _bottomAlignment.value,
-                colors: isDark
-                    ? [
-                        const Color(0xFF0D0F14),
-                        const Color(0xFF1A1030),
-                        const Color(0xFF0D1520),
-                      ]
-                    : [
-                        const Color(0xFFF0F2F8),
-                        const Color(0xFFE8E0FF),
-                        const Color(0xFFE0F0FF),
-                      ],
-              ),
-            ),
-            child: child,
-          );
-        },
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Theme toggle top-right
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Consumer<SettingsProvider>(
-                  builder: (context, settings, _) {
-                    return IconButton(
-                      icon: Icon(
-                        settings.isDarkMode
-                            ? Icons.light_mode_rounded
-                            : Icons.dark_mode_rounded,
-                      ),
-                      onPressed: () => settings.toggleTheme(),
-                      tooltip: settings.isDarkMode
-                          ? 'Switch to light mode'
-                          : 'Switch to dark mode',
-                    );
-                  },
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ═══════════════════ HERO (full screen height) ══════════════════
+            SizedBox(
+              height: screenH,
+              child: AnimatedBuilder(
+                animation: _bgController,
+                builder: (context, child) => Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: _topAlignment.value,
+                      end: _bottomAlignment.value,
+                      colors: isDark
+                          ? [
+                              const Color(0xFF0D0F14),
+                              const Color(0xFF1A1030),
+                              const Color(0xFF0D1520),
+                            ]
+                          : [
+                              const Color(0xFFF0F2F8),
+                              const Color(0xFFE8E0FF),
+                              const Color(0xFFE0F0FF),
+                            ],
+                    ),
+                  ),
+                  child: child,
                 ),
-              ),
-              // Center content
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                child: SafeArea(
+                  child: Stack(
                     children: [
-                      // Hero section
-                      const AppHeroTitle(
-                        title: 'SE 12',
-                        subtitle: 'Your secrets. Locked. Local. Yours.',
-                        icon: Icons.lock_rounded,
-                      ),
-                      const SizedBox(height: 56),
-                      // Login button
-                      FadeInUp(
-                        duration: const Duration(milliseconds: 600),
-                        delay: const Duration(milliseconds: 500),
-                        child: _AnimatedButton(
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.login_rounded),
-                              label: const Text('Login',
-                                  style: TextStyle(fontSize: 17)),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const LoginPage()),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 17),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Consumer<SettingsProvider>(
+                          builder: (context, settings, _) => IconButton(
+                            icon: Icon(settings.isDarkMode
+                                ? Icons.light_mode_rounded
+                                : Icons.dark_mode_rounded),
+                            onPressed: () => settings.toggleTheme(),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      // Register button
-                      FadeInUp(
-                        duration: const Duration(milliseconds: 600),
-                        delay: const Duration(milliseconds: 650),
-                        child: _AnimatedButton(
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.person_add_rounded),
-                              label: const Text('Create Account',
-                                  style: TextStyle(fontSize: 17)),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const RegisterUsernamePage(),
+                      Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const AppHeroTitle(
+                                title: 'SE 12',
+                                subtitle: 'Your secrets. Locked. Local. Yours.',
+                                icon: Icons.lock_rounded,
+                              ),
+                              const SizedBox(height: 36),
+                              FadeInUp(
+                                duration: const Duration(milliseconds: 600),
+                                delay: const Duration(milliseconds: 300),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _statChip('128-bit', 'Key length', primary),
+                                    _statDivider(),
+                                    _statChip('100%', 'Client-side', primary),
+                                    _statDivider(),
+                                    _statChip('0', 'Plaintext stored', Colors.teal),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 36),
+                              FadeInUp(
+                                duration: const Duration(milliseconds: 600),
+                                delay: const Duration(milliseconds: 500),
+                                child: _AnimatedButton(
+                                  child: SizedBox(
+                                    width: screenW > 600 ? 420 : double.infinity,
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.login_rounded),
+                                      label: const Text('Login', style: TextStyle(fontSize: 17)),
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 17),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      ),
+                                    ),
                                   ),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 17),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      // Security tagline
-                      FadeInUp(
-                        duration: const Duration(milliseconds: 600),
-                        delay: const Duration(milliseconds: 800),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.security_rounded,
-                                size: 14, color: primary.withOpacity(0.7)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'end-to-end encrypted · zero knowledge',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? const Color(0xFF5A6282)
-                                    : Colors.grey.shade500,
-                                letterSpacing: 0.4,
+                              const SizedBox(height: 14),
+                              FadeInUp(
+                                duration: const Duration(milliseconds: 600),
+                                delay: const Duration(milliseconds: 650),
+                                child: _AnimatedButton(
+                                  child: SizedBox(
+                                    width: screenW > 600 ? 420 : double.infinity,
+                                    child: OutlinedButton.icon(
+                                      icon: const Icon(Icons.person_add_rounded),
+                                      label: const Text('Create Account', style: TextStyle(fontSize: 17)),
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const RegisterUsernamePage()),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 17),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 28),
+                              FadeInUp(
+                                duration: const Duration(milliseconds: 600),
+                                delay: const Duration(milliseconds: 900),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.keyboard_arrow_down_rounded, size: 28, color: primary.withOpacity(0.5)),
+                                    Text('Scroll to learn more', style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF5A6282) : Colors.grey.shade500, letterSpacing: 0.4)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ],
+            ),
+            // ═══ TICKER ═══
+            _TickerBelt(isDark: isDark),
+            // ═══ FEATURES ═══
+            _MarketingSection(
+              badge: '✦  Everything you need',
+              title: 'Built for security.\nDesigned for humans.',
+              subtitle: 'Every feature was designed with one goal: keep your passwords safe without getting in your way.',
+              child: Wrap(
+                spacing: 16, runSpacing: 16, alignment: WrapAlignment.center,
+                children: [
+                  _FeatureCard(icon: Icons.lock_rounded, color: primary, title: 'End-to-End Encrypted', desc: 'Your vault is encrypted on-device before touching any server. We literally cannot read your passwords.'),
+                  _FeatureCard(icon: Icons.vpn_key_rounded, color: Colors.amber, title: 'Argon2id Key Derivation', desc: 'Master password never leaves your device. Derives a 256-bit key locally — winner of Password Hashing Competition.'),
+                  _FeatureCard(icon: Icons.verified_user_rounded, color: Colors.teal, title: 'Two-Factor Auth (2FA)', desc: 'Add TOTP-based 2FA. Even if someone knows your password, they cannot access your vault without the second factor.'),
+                  _FeatureCard(icon: Icons.timer_off_rounded, color: Colors.red, title: 'Auto-Lock on Idle', desc: 'Your vault locks automatically after configurable inactivity. No more open vaults when you step away from the screen.'),
+                  _FeatureCard(icon: Icons.extension_rounded, color: Colors.green, title: 'Browser Extension', desc: 'Auto-fill credentials on any website with one click. Works on Chrome, Edge, and all Chromium browsers.'),
+                  _FeatureCard(icon: Icons.backup_rounded, color: Colors.blue, title: 'Encrypted Backups', desc: 'Create encrypted vault backups anytime. Your data stays yours — export, restore, self-host with full control.'),
+                  _FeatureCard(icon: Icons.bar_chart_rounded, color: Colors.pink, title: 'Password Strength Meter', desc: 'Real-time strength scoring with actionable tips. See exactly what is missing as you type your master password.'),
+                  _FeatureCard(icon: Icons.content_paste_off_rounded, color: Colors.purple, title: 'Clipboard Auto-Clear', desc: 'Copied passwords automatically clear from clipboard after a short timeout. No accidental pastes into chat apps.'),
+                  _FeatureCard(icon: Icons.search_rounded, color: Colors.orange, title: 'Categories & Search', desc: 'Organise by Work, Personal, Banking, Social. Instant search so you never scroll endlessly to find anything.'),
+                ],
+              ),
+            ),
+            // ═══ SECURITY ═══
+            Container(
+              color: isDark ? const Color(0xFF0F1117) : const Color(0xFFF7F8FC),
+              padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 32),
+              child: Column(
+                children: [
+                  _SectionBadge('✦  Zero-Knowledge'),
+                  const SizedBox(height: 16),
+                  Text("We cannot read\nyour passwords.\nBy design.", textAlign: TextAlign.center, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1.15, color: isDark ? Colors.white : Colors.black87)),
+                  const SizedBox(height: 12),
+                  Text('SecureVault uses a zero-knowledge architecture. Your master password never leaves your device — ever.', textAlign: TextAlign.center, style: TextStyle(color: isDark ? Colors.white54 : Colors.black45, fontSize: 15)),
+                  const SizedBox(height: 40),
+                  Wrap(
+                    spacing: 16, runSpacing: 16, alignment: WrapAlignment.center,
+                    children: [
+                      _SecurityChip(icon: Icons.lock_rounded, color: primary, title: 'Argon2id — Memory-Hard Hashing', desc: 'Key derivation uses 128 MB RAM and 3 iterations, making brute-force attacks economically infeasible.', badge: 'Argon2id · 128MB · 3 iter · 4 lanes'),
+                      _SecurityChip(icon: Icons.security_rounded, color: Colors.teal, title: 'XChaCha20-Poly1305 AEAD', desc: 'Vault encrypted with a 256-bit key, 24-byte nonce, and 128-bit auth tag. Nonce collision is statistically impossible.', badge: 'XChaCha20-Poly1305 · 256-bit key'),
+                      _SecurityChip(icon: Icons.block_rounded, color: Colors.green, title: 'No Plaintext. No Telemetry. No Ads.', desc: 'The server stores only your encrypted blob — never your password or key. Zero analytics or telemetry collected.', badge: 'Open Source · Self-hostable'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // ═══ HOW IT WORKS ═══
+            _MarketingSection(
+              badge: '✦  Simple process',
+              title: 'Set up in 60 seconds.',
+              subtitle: 'No credit card. No email. Just a username, a strong password, and you are in.',
+              child: Wrap(
+                spacing: 16, runSpacing: 16, alignment: WrapAlignment.center,
+                children: [
+                  _StepCard(number: '1', title: 'Create an Account', desc: 'Pick a username and a strong master password. SE 12 derives your encryption key on-device using Argon2id — your password is never sent anywhere.', color: primary),
+                  _StepCard(number: '2', title: 'Add Your Credentials', desc: 'Add credentials with site name, username, password, and category. Every save encrypts your entire vault with XChaCha20-Poly1305.', color: Colors.teal),
+                  _StepCard(number: '3', title: 'Access Anywhere', desc: 'Log in from the desktop app or browser extension. Your vault decrypts locally. Autofill on any website instantly.', color: Colors.green),
+                ],
+              ),
+            ),
+            // ═══ OPEN SOURCE CTA ═══
+            Container(
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(vertical: 56, horizontal: 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [primary.withOpacity(0.12), Colors.teal.withOpacity(0.06)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                border: Border.all(color: primary.withOpacity(0.2)),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  _SectionBadge('✦  100% Open Source'),
+                  const SizedBox(height: 16),
+                  ShaderMask(
+                    shaderCallback: (r) => LinearGradient(colors: [primary, Colors.teal]).createShader(r),
+                    child: const Text("Don't trust us.\nVerify us.", textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, height: 1.2, color: Colors.white)),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Every line of code is public. Audit our encryption, run your own server, or contribute.\nSecurity through transparency — not obscurity.', textAlign: TextAlign.center, style: TextStyle(color: isDark ? Colors.white54 : Colors.black45, fontSize: 14, height: 1.65)),
+                  const SizedBox(height: 28),
+                  Wrap(
+                    spacing: 12, alignment: WrapAlignment.center,
+                    children: [
+                      _AnimatedButton(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.code_rounded),
+                          label: const Text('View Source on GitHub'),
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        ),
+                      ),
+                      _AnimatedButton(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.person_add_rounded),
+                          label: const Text('Get Started Free'),
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterUsernamePage())),
+                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // ═══ FOOTER ═══
+            Container(
+              color: isDark ? const Color(0xFF0A0C13) : const Color(0xFFF0F2F8),
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 32),
+              child: Column(
+                children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.lock_rounded, color: primary, size: 18), const SizedBox(width: 8), Text('SE 12', style: TextStyle(fontWeight: FontWeight.w800, color: primary))]),
+                  const SizedBox(height: 8),
+                  Text('An open-source, zero-knowledge password manager built with Flutter, FastAPI and real cryptography.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: isDark ? Colors.white38 : Colors.black38)),
+                  const SizedBox(height: 16),
+                  Wrap(spacing: 10, alignment: WrapAlignment.center, children: [_FooterChip('MIT License'), _FooterChip('Flutter'), _FooterChip('FastAPI'), _FooterChip('Argon2id'), _FooterChip('XChaCha20'), _FooterChip('libsodium')]),
+                  const SizedBox(height: 12),
+                  Text('2026 SE 12. Made with love.', style: TextStyle(fontSize: 11, color: isDark ? Colors.white24 : Colors.black26)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statChip(String value, String label, Color color) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(children: [
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        ]),
+      );
+
+  Widget _statDivider() => Container(height: 32, width: 1, color: Colors.white.withOpacity(0.1));
+}
+
+// ─────────────────────── Supporting marketing widgets ────────────────────────
+
+class _SectionBadge extends StatelessWidget {
+  final String text;
+  const _SectionBadge(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: primary.withOpacity(0.1),
+        border: Border.all(color: primary.withOpacity(0.25)),
+        borderRadius: BorderRadius.circular(40),
+      ),
+      child: Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: primary, letterSpacing: 0.3)),
+    );
+  }
+}
+
+class _MarketingSection extends StatelessWidget {
+  final String badge, title, subtitle;
+  final Widget child;
+  const _MarketingSection({required this.badge, required this.title, required this.subtitle, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 32),
+      child: Column(children: [
+        _SectionBadge(badge),
+        const SizedBox(height: 16),
+        Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1.15, color: isDark ? Colors.white : Colors.black87)),
+        const SizedBox(height: 12),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(color: isDark ? Colors.white54 : Colors.black45, fontSize: 15)),
+        const SizedBox(height: 48),
+        child,
+      ]),
+    );
+  }
+}
+
+class _FeatureCard extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final String title, desc;
+  const _FeatureCard({required this.icon, required this.color, required this.title, required this.desc});
+  @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> {
+  bool _hovered = false;
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 270,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161924) : Colors.white,
+          border: Border.all(color: _hovered ? widget.color.withOpacity(0.4) : Colors.white.withOpacity(0.07)),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: _hovered ? widget.color.withOpacity(0.18) : Colors.black.withOpacity(0.08), blurRadius: _hovered ? 24 : 8, offset: const Offset(0, 4))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 48, height: 48, decoration: BoxDecoration(color: widget.color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)), child: Icon(widget.icon, color: widget.color, size: 24)),
+          const SizedBox(height: 14),
+          Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 8),
+          Text(widget.desc, style: const TextStyle(fontSize: 13, height: 1.6), maxLines: 4, overflow: TextOverflow.ellipsis),
+        ]),
+      ),
+    );
+  }
+}
+
+class _SecurityChip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title, desc, badge;
+  const _SecurityChip({required this.icon, required this.color, required this.title, required this.desc, required this.badge});
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 310,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161924) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, color: color, size: 26),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+          const SizedBox(height: 4),
+          Text(desc, style: const TextStyle(fontSize: 12, height: 1.55)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+            child: Text(badge, style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+          ),
+        ])),
+      ]),
+    );
+  }
+}
+
+class _StepCard extends StatelessWidget {
+  final String number, title, desc;
+  final Color color;
+  const _StepCard({required this.number, required this.title, required this.desc, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 290,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161924) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: Column(children: [
+        Container(
+          width: 56, height: 56,
+          decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withOpacity(0.6)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))]),
+          child: Center(child: Text(number, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900))),
+        ),
+        const SizedBox(height: 16),
+        Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        const SizedBox(height: 8),
+        Text(desc, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, height: 1.65)),
+      ]),
+    );
+  }
+}
+
+class _FooterChip extends StatelessWidget {
+  final String text;
+  const _FooterChip(this.text);
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2235) : const Color(0xFFE8EAF0),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: isDark ? Colors.white12 : Colors.black.withOpacity(0.07)),
+      ),
+      child: Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.white54 : Colors.black45)),
+    );
+  }
+}
+
+class _TickerBelt extends StatefulWidget {
+  final bool isDark;
+  const _TickerBelt({required this.isDark});
+  @override
+  State<_TickerBelt> createState() => _TickerBeltState();
+}
+
+class _TickerBeltState extends State<_TickerBelt> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+  static const _items = ['✦  Argon2id Key Derivation', '✦  XChaCha20-Poly1305 Encryption', '✦  Zero-Knowledge Architecture', '✦  Two-Factor Authentication', '✦  Auto-Lock on Inactivity', '✦  Browser Extension Autofill', '✦  Password Strength Meter', '✦  Encrypted Cloud Backups', '✦  Open Source Codebase', '✦  No Telemetry. No Ads.'];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 30))..repeat();
+    _anim = Tween<double>(begin: 0, end: 1).animate(_ctrl);
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [..._items, ..._items];
+    return Container(
+      color: widget.isDark ? const Color(0xFF0F1117) : const Color(0xFFF0F2F8),
+      height: 44,
+      child: ClipRect(
+        child: AnimatedBuilder(
+          animation: _anim,
+          builder: (_, __) => CustomPaint(
+            painter: _TickerPainter(items: items, progress: _anim.value, isDark: widget.isDark, primary: Theme.of(context).colorScheme.primary),
           ),
         ),
       ),
     );
   }
 }
+
+class _TickerPainter extends CustomPainter {
+  final List<String> items;
+  final double progress;
+  final bool isDark;
+  final Color primary;
+  _TickerPainter({required this.items, required this.progress, required this.isDark, required this.primary});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const itemWidth = 270.0;
+    final totalWidth = items.length * itemWidth;
+    final offset = progress * totalWidth / 2;
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    for (var i = 0; i < items.length; i++) {
+      final x = i * itemWidth - offset;
+      if (x < -itemWidth || x > size.width) continue;
+      tp.text = TextSpan(text: items[i], style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.2));
+      tp.layout();
+      tp.paint(canvas, Offset(x, (size.height - tp.height) / 2));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TickerPainter o) => o.progress != progress;
+}
+
 
 /* =========================
    ANIMATED BUTTON WRAPPER
