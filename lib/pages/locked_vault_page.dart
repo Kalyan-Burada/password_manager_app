@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:animate_do/animate_do.dart';
 import '../services/auth_service.dart';
 import '../services/log_service.dart';
 import '../widgets/app_hero_title.dart';
@@ -190,7 +191,7 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -200,19 +201,24 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
                 const AppHeroTitle(
                   title: 'Vault Locked',
                   subtitle: 'Your vault was locked due to inactivity',
-                  icon: Icons.lock,
+                  icon: Icons.lock_rounded,
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.06,
-                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                 // Security info card
-                Card(
-                  color: Colors.orange.withOpacity(0.1),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
                     child: Row(
                       children: [
-                        const Icon(Icons.security, color: Colors.orange),
+                        const Icon(Icons.security_rounded,
+                            color: Colors.orange),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -236,49 +242,56 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.04,
-                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.04),
                 // Password field
-                Semantics(
-                  label: 'Password input field to unlock vault',
-                  child: TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 330),
+                  child: Semantics(
+                    label: 'Password input field to unlock vault',
+                    child: TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        hintText: 'Enter your password',
+                        prefixIcon: Icon(Icons.lock_outline_rounded),
+                      ),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _loading ? null : _unlock(),
+                      enabled: !_loading,
                     ),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _loading ? null : _unlock(),
-                    enabled: !_loading,
                   ),
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.03,
-                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
                 // Unlock button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.lock_open),
-                    label: const Text('Unlock Vault'),
-                    onPressed: _loading ? null : _unlock,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 460),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.lock_open_rounded),
+                      label: const Text('Unlock Vault'),
+                      onPressed: _loading ? null : _unlock,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.02,
-                ),
+                const SizedBox(height: 12),
                 // Logout button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
-                    onPressed: _loading ? null : _logout,
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 560),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Logout'),
+                      onPressed: _loading ? null : _logout,
+                    ),
                   ),
                 ),
               ] else
@@ -287,19 +300,24 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
                 const AppHeroTitle(
                   title: 'Two-Factor Authentication',
                   subtitle: 'Enter your authenticator code to unlock',
-                  icon: Icons.verified_user,
+                  icon: Icons.verified_user_rounded,
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.06,
-                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                 // MFA info card
-                Card(
-                  color: Colors.blue.withOpacity(0.1),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    ),
                     child: Row(
                       children: [
-                        const Icon(Icons.phone_android, color: Colors.blue),
+                        const Icon(Icons.phone_android_rounded,
+                            color: Colors.blue),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -323,94 +341,118 @@ class _LockedVaultPageState extends State<LockedVaultPage> {
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.04,
-                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.04),
                 // MFA code field
-                Semantics(
-                  label: 'MFA code input field (6 digits)',
-                  child: TextField(
-                    controller: _mfaCodeController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    decoration: const InputDecoration(
-                      labelText: 'Authentication Code',
-                      hintText: '000000',
-                      counterText: '', // Hide character counter
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _loading ? null : _verifyMfa(),
-                    enabled: !_loading,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.03,
-                ),
-                // Verify button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('Verify & Unlock'),
-                    onPressed: _loading ? null : _verifyMfa,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.02,
-                ),
-                // Back button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back to Password'),
-                    onPressed: _loading ? null : _cancelMfa,
-                  ),
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.02,
-                ),
-                // Logout button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
-                    onPressed: _loading ? null : _logout,
-                  ),
-                ),
-              ],
-              // Error message (shown on both screens)
-              if (_error.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error,
-                          style: const TextStyle(color: Colors.red),
-                        ),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 330),
+                  child: Semantics(
+                    label: 'MFA code input field (6 digits)',
+                    child: TextField(
+                      controller: _mfaCodeController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 26,
+                          letterSpacing: 10,
+                          fontWeight: FontWeight.w600),
+                      decoration: const InputDecoration(
+                        labelText: 'Authentication Code',
+                        hintText: '000000',
+                        counterText: '',
+                        prefixIcon: Icon(Icons.lock_clock_rounded),
                       ),
-                    ],
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _loading ? null : _verifyMfa(),
+                      enabled: !_loading,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                // Verify button
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 460),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle_rounded),
+                      label: const Text('Verify & Unlock'),
+                      onPressed: _loading ? null : _verifyMfa,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Back button
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 560),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: const Text('Back to Password'),
+                      onPressed: _loading ? null : _cancelMfa,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Logout button
+                FadeInUp(
+                  duration: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 660),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Logout'),
+                      onPressed: _loading ? null : _logout,
+                    ),
                   ),
                 ),
               ],
+              // Animated error (shown on both screens)
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _error.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: FadeIn(
+                          duration: const Duration(milliseconds: 300),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: Colors.red.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded,
+                                    color: Colors.red, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _error,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
         ),

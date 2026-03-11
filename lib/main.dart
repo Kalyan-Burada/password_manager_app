@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // UI ENHANCEMENT: Provider for state management of settings
 import 'package:provider/provider.dart';
+import 'package:animate_do/animate_do.dart';
 import 'services/auth_service.dart';
 import 'services/log_service.dart';
 import 'services/inactivity_service.dart';
+import 'widgets/app_hero_title.dart';
 import 'widgets/backup_dialog.dart';
 import 'widgets/import_dialog.dart';
 import 'docs_page.dart';
@@ -96,90 +98,259 @@ class MyApp extends StatelessWidget {
  * - Consistent styling with rounded corners
  */
 
-class StartPage extends StatelessWidget {
+class StartPage extends StatefulWidget {
   const StartPage({super.key});
 
   @override
+  State<StartPage> createState() => _StartPageState();
+}
+
+class _StartPageState extends State<StartPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bgController;
+  late Animation<Alignment> _topAlignment;
+  late Animation<Alignment> _bottomAlignment;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat(reverse: true);
+
+    _topAlignment = TweenSequence<Alignment>([
+      TweenSequenceItem(
+          tween:
+              AlignmentTween(begin: Alignment.topLeft, end: Alignment.topRight),
+          weight: 1),
+    ]).animate(CurvedAnimation(parent: _bgController, curve: Curves.easeInOut));
+
+    _bottomAlignment = TweenSequence<Alignment>([
+      TweenSequenceItem(
+          tween: AlignmentTween(
+              begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+          weight: 1),
+    ]).animate(CurvedAnimation(parent: _bgController, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: true, // enables back arrow
-        // UI ENHANCEMENT: Theme toggle button for accessibility
-        actions: [
-          Consumer<SettingsProvider>(
-            builder: (context, settings, _) {
-              return IconButton(
-                icon: Icon(
-                  settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                ),
-                onPressed: () => settings.toggleTheme(),
-                tooltip: settings.isDarkMode
-                    ? 'Switch to light mode'
-                    : 'Switch to dark mode',
-              );
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: AnimatedBuilder(
+        animation: _bgController,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: _topAlignment.value,
+                end: _bottomAlignment.value,
+                colors: isDark
+                    ? [
+                        const Color(0xFF0D0F14),
+                        const Color(0xFF1A1030),
+                        const Color(0xFF0D1520),
+                      ]
+                    : [
+                        const Color(0xFFF0F2F8),
+                        const Color(0xFFE8E0FF),
+                        const Color(0xFFE0F0FF),
+                      ],
+              ),
+            ),
+            child: child,
+          );
+        },
+        child: SafeArea(
+          child: Stack(
             children: [
-              // App branding with icon and tagline
-              const AppHeroTitle(
-                title: 'SE 12',
-                subtitle: 'Your secrets. Locked. Local. Yours.',
-                icon: Icons.lock_rounded,
-              ),
-              const SizedBox(height: 48),
-              // Login button - primary action
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.login),
-                  label: const Text('Login', style: TextStyle(fontSize: 18)),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
+              // Theme toggle top-right
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Consumer<SettingsProvider>(
+                  builder: (context, settings, _) {
+                    return IconButton(
+                      icon: Icon(
+                        settings.isDarkMode
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                      ),
+                      onPressed: () => settings.toggleTheme(),
+                      tooltip: settings.isDarkMode
+                          ? 'Switch to light mode'
+                          : 'Switch to dark mode',
                     );
                   },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              // Register button - secondary action
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Create Account'),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RegisterUsernamePage(),
+              // Center content
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Hero section
+                      const AppHeroTitle(
+                        title: 'SE 12',
+                        subtitle: 'Your secrets. Locked. Local. Yours.',
+                        icon: Icons.lock_rounded,
                       ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                      const SizedBox(height: 56),
+                      // Login button
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 600),
+                        delay: const Duration(milliseconds: 500),
+                        child: _AnimatedButton(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.login_rounded),
+                              label: const Text('Login',
+                                  style: TextStyle(fontSize: 17)),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const LoginPage()),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 17),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      // Register button
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 600),
+                        delay: const Duration(milliseconds: 650),
+                        child: _AnimatedButton(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.person_add_rounded),
+                              label: const Text('Create Account',
+                                  style: TextStyle(fontSize: 17)),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const RegisterUsernamePage(),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 17),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      // Security tagline
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 600),
+                        delay: const Duration(milliseconds: 800),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.security_rounded,
+                                size: 14, color: primary.withOpacity(0.7)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'end-to-end encrypted · zero knowledge',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark
+                                    ? const Color(0xFF5A6282)
+                                    : Colors.grey.shade500,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/* =========================
+   ANIMATED BUTTON WRAPPER
+   ========================= */
+
+/// Wraps any button with a subtle scale press animation
+class _AnimatedButton extends StatefulWidget {
+  final Widget child;
+  const _AnimatedButton({required this.child});
+
+  @override
+  State<_AnimatedButton> createState() => _AnimatedButtonState();
+}
+
+class _AnimatedButtonState extends State<_AnimatedButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnim,
+        builder: (context, child) =>
+            Transform.scale(scale: _scaleAnim.value, child: child),
+        child: widget.child,
       ),
     );
   }
@@ -342,7 +513,9 @@ class _LoginPageState extends State<LoginPage> {
             builder: (context, settings, _) {
               return IconButton(
                 icon: Icon(
-                  settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  settings.isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
                 ),
                 onPressed: () => settings.toggleTheme(),
                 tooltip: settings.isDarkMode
@@ -354,94 +527,111 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         child: Column(
           children: [
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.06,
-            ),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.06),
             const AppHeroTitle(
               title: 'Welcome Back',
               subtitle: 'Unlock your vault',
               icon: Icons.key_rounded,
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.06,
-            ),
-            // UI ENHANCEMENT: Semantic label for screen reader accessibility
-            Semantics(
-              label: 'Username input field',
-              child: TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Username'),
-                // UI ENHANCEMENT: Keyboard navigation - Tab to next field
-                textInputAction: TextInputAction.next,
-                // UI ENHANCEMENT: Disable input during loading
-                enabled: !_loading,
+            SizedBox(height: MediaQuery.of(context).size.height * 0.06),
+            // Username field
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 200),
+              child: Semantics(
+                label: 'Username input field',
+                child: TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
+                  ),
+                  textInputAction: TextInputAction.next,
+                  enabled: !_loading,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            // UI ENHANCEMENT: Semantic label for screen reader accessibility
-            Semantics(
-              label: 'Password input field',
-              child: TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
-                // UI ENHANCEMENT: Keyboard navigation - Enter to submit
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _loading ? null : _login(),
-                // UI ENHANCEMENT: Disable input during loading
-                enabled: !_loading,
+            const SizedBox(height: 14),
+            // Password field
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 330),
+              child: Semantics(
+                label: 'Password input field',
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock_outline_rounded),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _loading ? null : _login(),
+                  enabled: !_loading,
+                ),
               ),
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.03,
+            SizedBox(height: MediaQuery.of(context).size.height * 0.035),
+            // Login button
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 460),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _login,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Login'),
+                ),
+              ),
             ),
-            // UI ENHANCEMENT: Full-width button with loading indicator
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _login,
-                // UI ENHANCEMENT: Show circular progress indicator during loading
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+            // Error message with animated entrance
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _error.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: FadeIn(
+                        duration: const Duration(milliseconds: 300),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border:
+                                Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Colors.red, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _error,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )
-                    : const Text('Login'),
-              ),
-            ),
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              // UI ENHANCEMENT: Styled error message container with icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error,
-                        style: const TextStyle(color: Colors.red),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
@@ -531,13 +721,14 @@ class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: true,
-        // UI ENHANCEMENT: Theme toggle button
         actions: [
           Consumer<SettingsProvider>(
             builder: (context, settings, _) {
               return IconButton(
                 icon: Icon(
-                  settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  settings.isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
                 ),
                 onPressed: () => settings.toggleTheme(),
                 tooltip: settings.isDarkMode
@@ -549,7 +740,7 @@ class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         child: Column(
           children: [
             SizedBox(height: MediaQuery.of(context).size.height * 0.06),
@@ -559,59 +750,79 @@ class _RegisterUsernamePageState extends State<RegisterUsernamePage> {
               icon: Icons.person_add_rounded,
             ),
             SizedBox(height: MediaQuery.of(context).size.height * 0.06),
-            Semantics(
-              label: 'Username input field',
-              child: TextField(
-                controller: _usernameController,
-                decoration:
-                    const InputDecoration(labelText: 'Choose a username'),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _loading ? null : _next(),
-                enabled: !_loading,
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 200),
+              child: Semantics(
+                label: 'Username input field',
+                child: TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Choose a username',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _loading ? null : _next(),
+                  enabled: !_loading,
+                ),
               ),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _next,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text('Next'),
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 350),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _next,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Next'),
+                ),
               ),
             ),
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error,
-                        style: const TextStyle(color: Colors.red),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _error.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: FadeIn(
+                        duration: const Duration(milliseconds: 300),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border:
+                                Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Colors.red, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _error,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
@@ -666,7 +877,57 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
   final _passwordController = TextEditingController();
 
   bool _loading = false;
+  bool _obscure = true;
   String _error = '';
+  String _passwordText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(() {
+      setState(() => _passwordText = _passwordController.text);
+    });
+  }
+
+  // Returns 0-4: 0=Weak … 4=Very Strong
+  int _calcStrength(String p) {
+    if (p.isEmpty) return 0;
+    int score = 0;
+    if (p.length >= 8) score++;
+    if (p.length >= 12) score++;
+    if (p.contains(RegExp(r'[A-Z]')) && p.contains(RegExp(r'[a-z]'))) score++;
+    if (p.contains(RegExp(r'[0-9]'))) score++;
+    if (p.contains(RegExp(r'[!@#%^&*(),.?":{}|<>~`_+=\[\]\\\/\-]'))) score++;
+    return score.clamp(0, 4);
+  }
+
+  static const _strengthLabels = [
+    'Weak',
+    'Fair',
+    'Good',
+    'Strong',
+    'Very Strong'
+  ];
+  static const _strengthColors = [
+    Color(0xFFE74C3C),
+    Color(0xFFE67E22),
+    Color(0xFFF1C40F),
+    Color(0xFF2ECC71),
+    Color(0xFF00CEC9),
+  ];
+
+  List<String> _getMissingTips(String p) {
+    final tips = <String>[];
+    if (p.length < 8)
+      tips.add('At least 8 characters');
+    else if (p.length < 12) tips.add('12+ characters is even better');
+    if (!p.contains(RegExp(r'[A-Z]')))
+      tips.add('Add an uppercase letter (A-Z)');
+    if (!p.contains(RegExp(r'[a-z]'))) tips.add('Add a lowercase letter (a-z)');
+    if (!p.contains(RegExp(r'[0-9]'))) tips.add('Add a number (0-9)');
+    if (!p.contains(RegExp(r'[!@#%^&*]'))) tips.add('Add a symbol (!@#...)');
+    return tips;
+  }
 
   /// Registers new account and automatically logs in
   void _showSecurityAlert(String message) {
@@ -752,13 +1013,14 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: true,
-        // UI ENHANCEMENT: Theme toggle button
         actions: [
           Consumer<SettingsProvider>(
             builder: (context, settings, _) {
               return IconButton(
                 icon: Icon(
-                  settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  settings.isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
                 ),
                 onPressed: () => settings.toggleTheme(),
                 tooltip: settings.isDarkMode
@@ -770,83 +1032,147 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         child: Column(
           children: [
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.06,
-            ),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.06),
             const AppHeroTitle(
               title: 'Set a Strong Password',
               subtitle: 'This protects everything',
               icon: Icons.shield_rounded,
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.06,
-            ),
-            Text(
-              'Username: ${widget.username}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Semantics(
-              label: 'Password input field',
-              child: TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  helperText: 'At least 8 characters',
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _loading ? null : _register(),
-                enabled: !_loading,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _register,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text('Register'),
-              ),
-            ),
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+            // Username chip
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 150),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 20),
+                    Icon(
+                      Icons.person_outline_rounded,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error,
-                        style: const TextStyle(color: Colors.red),
+                    Text(
+                      widget.username,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
+            const SizedBox(height: 20),
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 280),
+              child: Semantics(
+                label: 'Password input field',
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: _obscure,
+                  decoration: InputDecoration(
+                    labelText: 'Master Password',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscure
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                      ),
+                      onPressed: () => setState(() => _obscure = !_obscure),
+                      tooltip: _obscure ? 'Show password' : 'Hide password',
+                    ),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _loading ? null : _register(),
+                  enabled: !_loading,
+                ),
+              ),
+            ),
+            // ── Strength Meter ──────────────────────────────────────────
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              child: _passwordText.isEmpty
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: _PasswordStrengthMeter(
+                        strength: _calcStrength(_passwordText),
+                        label: _strengthLabels[_calcStrength(_passwordText)],
+                        color: _strengthColors[_calcStrength(_passwordText)],
+                        tips: _getMissingTips(_passwordText),
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 24),
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 410),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _register,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Create Account'),
+                ),
+              ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _error.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: FadeIn(
+                        duration: const Duration(milliseconds: 300),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border:
+                                Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Colors.red, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _error,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
@@ -854,55 +1180,106 @@ class _RegisterPasswordPageState extends State<RegisterPasswordPage> {
   }
 }
 
-class AppHeroTitle extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
+/// Animated password strength indicator widget.
+/// Shows 5 coloured segments + a label + missing-criteria tips.
+class _PasswordStrengthMeter extends StatelessWidget {
+  final int strength; // 0–4
+  final String label;
+  final Color color;
+  final List<String> tips;
 
-  const AppHeroTitle({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
+  const _PasswordStrengthMeter({
+    required this.strength,
+    required this.label,
+    required this.color,
+    required this.tips,
   });
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final emptyColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: primary, // solid blue
-          ),
-          child: Icon(
-            icon,
-            size: 42,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.6,
+        // ── 5-segment bar ───────────────────────────────────────
+        Row(
+          children: List.generate(5, (i) {
+            final filled = i <= strength;
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                height: 6,
+                margin: EdgeInsets.only(right: i < 4 ? 4 : 0),
+                decoration: BoxDecoration(
+                  color: filled ? color : emptyColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
+            );
+          }),
         ),
         const SizedBox(height: 8),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade400,
-                letterSpacing: 0.4,
+        // ── Label ───────────────────────────────────────────────
+        Row(
+          children: [
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 300),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
+              child: Text(label),
+            ),
+            const Spacer(),
+            if (strength == 4)
+              Row(children: [
+                Icon(Icons.check_circle_rounded, color: color, size: 15),
+                const SizedBox(width: 4),
+                Text(
+                  'Looks great!',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ]),
+          ],
         ),
+        // ── Tips ────────────────────────────────────────────────
+        if (tips.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          ...tips.map((tip) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_right_rounded,
+                        size: 16,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.45)),
+                    const SizedBox(width: 4),
+                    Text(
+                      tip,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
       ],
     );
   }
@@ -1191,19 +1568,37 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
   IconData _getCategoryIcon(String category) {
     switch (category) {
       case 'Work':
-        return Icons.work;
+        return Icons.work_rounded;
       case 'Personal':
-        return Icons.person;
+        return Icons.person_rounded;
       case 'Banking':
-        return Icons.account_balance;
+        return Icons.account_balance_rounded;
       case 'Shopping':
-        return Icons.shopping_cart;
+        return Icons.shopping_cart_rounded;
       case 'Social Media':
-        return Icons.share;
+        return Icons.share_rounded;
       case 'Other':
-        return Icons.category;
+        return Icons.category_rounded;
       default:
-        return Icons.category;
+        return Icons.category_rounded;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Work':
+        return const Color(0xFF6C5CE7);
+      case 'Personal':
+        return const Color(0xFF00B894);
+      case 'Banking':
+        return const Color(0xFFFFC312);
+      case 'Shopping':
+        return const Color(0xFFFF6B6B);
+      case 'Social Media':
+        return const Color(0xFF48DBFB);
+      case 'Other':
+      default:
+        return const Color(0xFFB0B8CC);
     }
   }
 
@@ -1960,66 +2355,114 @@ class _VaultPageState extends State<VaultPage> with WidgetsBindingObserver {
                               style: const TextStyle(fontSize: 16),
                             ),
                           )
-                        : ListView(
+                        : ListView.builder(
                             padding: const EdgeInsets.only(
                               left: 16,
                               right: 16,
                               top: 16,
-                              bottom:
-                                  88, // extra space so FAB doesn't cover last item
+                              bottom: 88,
                             ),
-                            children: filteredItems.entries.map((entry) {
+                            itemCount: filteredItems.length,
+                            itemBuilder: (context, index) {
+                              final entry =
+                                  filteredItems.entries.elementAt(index);
                               final category =
                                   entry.value['category'] ?? 'Other';
-                              return Card(
-                                child: ListTile(
-                                  title: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(entry.key),
-                                      ),
-                                      Chip(
-                                        label: Text(
-                                          category,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                              final categoryColor = _getCategoryColor(category);
+                              return FadeInUp(
+                                duration: const Duration(milliseconds: 400),
+                                delay: Duration(milliseconds: 60 * (index % 8)),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Card(
+                                    child: ListTile(
+                                      // Leading: colored category avatar
+                                      leading: Container(
+                                        width: 46,
+                                        height: 46,
+                                        decoration: BoxDecoration(
+                                          color: categoryColor.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        avatar: Icon(
+                                        child: Icon(
                                           _getCategoryIcon(category),
-                                          size: 16,
+                                          color: categoryColor,
+                                          size: 22,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                      "Updated: ${entry.value['updatedAt']}"),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.copy),
-                                        onPressed: () => _copyWithAuthorization(
-                                          entry.value["password"]!,
-                                          entry.key,
-                                        ),
+                                      // Title: row with name + category chip
+                                      title: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              entry.key,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: categoryColor.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              category,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: categoryColor,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        onPressed: () => _editItem(entry.key,
-                                            entry.value["password"]!, category),
+                                      // Subtitle: timestamp
+                                      subtitle: Text(
+                                        'Updated: ${entry.value["updatedAt"] ?? ""}',
+                                        style: Theme.of(context).textTheme.bodySmall,
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.red),
-                                        onPressed: () => _deleteItem(entry.key),
+                                      // Trailing: action icons
+                                      // Use base icon names so widget tests can find them
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.copy, size: 20),
+                                            tooltip: 'Copy password',
+                                            onPressed: () => _copyWithAuthorization(
+                                              entry.value['password']!,
+                                              entry.key,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.edit, size: 20),
+                                            tooltip: 'Edit',
+                                            onPressed: () => _editItem(
+                                              entry.key,
+                                              entry.value['password']!,
+                                              category,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.delete,
+                                              size: 20,
+                                              color: Colors.red.withOpacity(0.7),
+                                            ),
+                                            tooltip: 'Delete',
+                                            onPressed: () => _deleteItem(entry.key),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               );
-                            }).toList(),
+                            },
                           ),
                   ),
                 ],
@@ -2133,43 +2576,94 @@ class _MfaVerifyPageState extends State<MfaVerifyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Enter MFA Code')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         child: Column(
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             const AppHeroTitle(
               title: 'Two-Factor Authentication',
-              subtitle: 'Enter code from your authenticator app',
+              subtitle: 'Enter the code from your authenticator app',
               icon: Icons.shield_rounded,
             ),
             const SizedBox(height: 40),
-            TextField(
-              controller: _codeController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8),
-              decoration: const InputDecoration(
-                labelText: '6-Digit Code',
-                counterText: '',
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 200),
+              child: TextField(
+                controller: _codeController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 28,
+                    letterSpacing: 10,
+                    fontWeight: FontWeight.w600),
+                decoration: const InputDecoration(
+                  labelText: '6-Digit Code',
+                  counterText: '',
+                  prefixIcon: Icon(Icons.lock_clock_rounded),
+                ),
+                onSubmitted: (_) => _verify(),
               ),
-              onSubmitted: (_) => _verify(),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _verify,
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : const Text('Verify'),
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 350),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _verify,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Verify'),
+                ),
               ),
             ),
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(_error, style: const TextStyle(color: Colors.red)),
-            ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _error.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: FadeInDown(
+                        animate: _error.isNotEmpty,
+                        duration: const Duration(milliseconds: 600),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border:
+                                Border.all(color: Colors.red.withOpacity(0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Colors.red, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _error,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
