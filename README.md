@@ -4,11 +4,11 @@ A cross-platform Flutter application that implements a secure password manager c
 
 ## Features
 
-- ✅ Cross-platform support (iOS, Android, Web, Windows, macOS, Linux)
-- 🔐 Secure password hashing with Argon2id
-- 🔑 Automatic user registration and login
-- 📦 Vault data retrieval
-- 🎨 Modern Material Design 3 UI
+- Cross-platform support (iOS, Android, Web, Windows, macOS, Linux)
+- Secure password hashing with Argon2id
+- Automatic user registration and login
+- Vault data retrieval
+- Modern Material Design 3 UI
 
 ## Prerequisites
 
